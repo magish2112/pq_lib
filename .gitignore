@@ -62,6 +62,17 @@ docs/build/
 .env.local
 .env.*.local
 
+# Documentation files (Russian)
+*.pdf
+*.docx
+*.doc
+симбиос.docx
+
+# Temporary project documentation (keep only English technical docs)
+Техническая*
+Сравнительный*
+Symbios Network*
+
 # Docker volumes
 docker-volumes/
 
