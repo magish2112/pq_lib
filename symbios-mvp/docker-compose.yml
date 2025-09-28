@@ -1,0 +1,147 @@
+version: '3.8'
+
+services:
+  # Symbios Network Nodes
+  validator-1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: symbios-validator-1
+    ports:
+      - "9001:9001"
+      - "9101:9101"
+    environment:
+      - NODE_ID=validator-1
+      - LISTEN_ADDR=/ip4/0.0.0.0/tcp/9001
+      - BOOTSTRAP_PEERS=/ip4/validator-2/tcp/9002/p2p/BOOTSTRAP_PEER_2,/ip4/validator-3/tcp/9003/p2p/BOOTSTRAP_PEER_3,/ip4/validator-4/tcp/9004/p2p/BOOTSTRAP_PEER_4
+      - METRICS_PORT=9101
+    volumes:
+      - ./data/validator-1:/app/data
+    networks:
+      - symbios-network
+    depends_on:
+      - prometheus
+
+  validator-2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: symbios-validator-2
+    ports:
+      - "9002:9002"
+      - "9102:9102"
+    environment:
+      - NODE_ID=validator-2
+      - LISTEN_ADDR=/ip4/0.0.0.0/tcp/9002
+      - BOOTSTRAP_PEERS=/ip4/validator-1/tcp/9001/p2p/BOOTSTRAP_PEER_1,/ip4/validator-3/tcp/9003/p2p/BOOTSTRAP_PEER_3,/ip4/validator-4/tcp/9004/p2p/BOOTSTRAP_PEER_4
+      - METRICS_PORT=9102
+    volumes:
+      - ./data/validator-2:/app/data
+    networks:
+      - symbios-network
+    depends_on:
+      - prometheus
+
+  validator-3:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: symbios-validator-3
+    ports:
+      - "9003:9003"
+      - "9103:9103"
+    environment:
+      - NODE_ID=validator-3
+      - LISTEN_ADDR=/ip4/0.0.0.0/tcp/9003
+      - BOOTSTRAP_PEERS=/ip4/validator-1/tcp/9001/p2p/BOOTSTRAP_PEER_1,/ip4/validator-2/tcp/9002/p2p/BOOTSTRAP_PEER_2,/ip4/validator-4/tcp/9004/p2p/BOOTSTRAP_PEER_4
+      - METRICS_PORT=9103
+    volumes:
+      - ./data/validator-3:/app/data
+    networks:
+      - symbios-network
+    depends_on:
+      - prometheus
+
+  validator-4:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: symbios-validator-4
+    ports:
+      - "9004:9004"
+      - "9104:9104"
+    environment:
+      - NODE_ID=validator-4
+      - LISTEN_ADDR=/ip4/0.0.0.0/tcp/9004
+      - BOOTSTRAP_PEERS=/ip4/validator-1/tcp/9001/p2p/BOOTSTRAP_PEER_1,/ip4/validator-2/tcp/9002/p2p/BOOTSTRAP_PEER_2,/ip4/validator-3/tcp/9003/p2p/BOOTSTRAP_PEER_3
+      - METRICS_PORT=9104
+    volumes:
+      - ./data/validator-4:/app/data
+    networks:
+      - symbios-network
+    depends_on:
+      - prometheus
+
+  # Monitoring Stack
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: symbios-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - symbios-network
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: symbios-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+    networks:
+      - symbios-network
+    depends_on:
+      - prometheus
+
+  # Load Generator (for testing)
+  load-generator:
+    build:
+      context: .
+      dockerfile: Dockerfile.loadgen
+    container_name: symbios-load-generator
+    environment:
+      - TARGET_NODES=validator-1:9001,validator-2:9002,validator-3:9003,validator-4:9004
+      - TPS_RATE=10
+    networks:
+      - symbios-network
+    depends_on:
+      - validator-1
+      - validator-2
+      - validator-3
+      - validator-4
+    profiles:
+      - load-test
+
+volumes:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  symbios-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+

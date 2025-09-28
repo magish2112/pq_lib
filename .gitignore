@@ -1,0 +1,86 @@
+# Rust build artifacts
+target/
+Cargo.lock
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Log files
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# RocksDB files
+*.sst
+*.log
+LOCK
+MANIFEST-*
+CURRENT
+IDENTITY
+LOG.old.*
+
+# Test coverage files
+*.profraw
+*.profdata
+coverage/
+lcov-report/
+
+# Benchmark results
+criterion/
+
+# Documentation build
+book/
+docs/build/
+
+# Backup files
+*.bak
+*.backup
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Docker volumes
+docker-volumes/
+
+# Prometheus data
+monitoring/prometheus/data/
+
+# Grafana data
+monitoring/grafana/data/
+
+# Node data directories
+node_data/
+data/
+
+# Keys and secrets
+keys/
+secrets/
+*.key
+*.pem
+
+# Performance test results
+perf_results/
+benchmark_results/
