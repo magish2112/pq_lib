@@ -257,7 +257,7 @@ This project is licensed under the MIT License - see [LICENSE](symbios-mvp/LICEN
 
 ## 🌟 Acknowledgments
 
-Built with ❤️ and ⚡ by blockchain researchers
+Built by magish
 
 *"Solving the blockchain trilemma through symbiotic architecture - not compromises, but synergy."*
 
