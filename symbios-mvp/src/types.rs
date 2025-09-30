@@ -14,6 +14,558 @@ use crate::pqcrypto::{PQCrypto, PQPublicKey, PQPrivateKey, PQSignature};
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Hash([u8; 32]);
 
+/// Ethereum-style address (20 bytes)
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct Address(pub [u8; 20]);
+
+impl Address {
+    pub fn from_public_key(pk: &PublicKey) -> Self {
+        let hash = Hash::new(&pk.as_bytes());
+        let mut addr = [0u8; 20];
+        addr.copy_from_slice(&hash.as_bytes()[12..32]); // Last 20 bytes
+        Self(addr)
+    }
+
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.0
+    }
+
+    pub fn from_hex(s: &str) -> Result<Self, Box<dyn std::error::Error>> {
+        let bytes = hex::decode(s)?;
+        if bytes.len() != 20 {
+            return Err("Invalid address length".into());
+        }
+        let mut addr = [0u8; 20];
+        addr.copy_from_slice(&bytes);
+        Ok(Self(addr))
+    }
+
+    pub fn to_hex(&self) -> String {
+        hex::encode(self.0)
+    }
+}
+
+/// Transaction amount (u64)
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Amount(pub u64);
+
+impl Amount {
+    pub fn as_u64(&self) -> u64 {
+        self.0
+    }
+
+    pub fn zero() -> Self {
+        Self(0)
+    }
+
+    pub fn from_u64(value: u64) -> Self {
+        Self(value)
+    }
+}
+
+/// Account nonce for replay protection
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Nonce(pub u64);
+
+impl Nonce {
+    pub fn as_u64(&self) -> u64 {
+        self.0
+    }
+
+    pub fn increment(&mut self) {
+        self.0 = self.0.saturating_add(1);
+    }
+
+    pub fn from_u64(value: u64) -> Self {
+        Self(value)
+    }
+
+    pub fn checked_add(&self, other: u64) -> Option<Self> {
+        self.0.checked_add(other).map(Self)
+    }
+
+    pub fn checked_sub(&self, other: u64) -> Option<Self> {
+        self.0.checked_sub(other).map(Self)
+    }
+}
+
+/// Gas price in wei (smallest unit)
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct GasPrice(pub u64);
+
+impl GasPrice {
+    pub fn as_u64(&self) -> u64 {
+        self.0
+    }
+
+    pub fn zero() -> Self {
+        Self(0)
+    }
+
+    pub fn from_u64(value: u64) -> Self {
+        Self(value)
+    }
+
+    pub fn saturating_add(&self, other: Self) -> Self {
+        Self(self.0.saturating_add(other.0))
+    }
+
+    pub fn saturating_sub(&self, other: Self) -> Self {
+        Self(self.0.saturating_sub(other.0))
+    }
+}
+
+/// Gas amount for transaction execution
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Gas(pub u64);
+
+impl Gas {
+    pub fn as_u64(&self) -> u64 {
+        self.0
+    }
+
+    pub fn zero() -> Self {
+        Self(0)
+    }
+
+    pub fn from_u64(value: u64) -> Self {
+        Self(value)
+    }
+
+    pub fn checked_add(&self, other: Self) -> Option<Self> {
+        self.0.checked_add(other.0).map(Self)
+    }
+
+    pub fn checked_sub(&self, other: Self) -> Option<Self> {
+        self.0.checked_sub(other.0).map(Self)
+    }
+}
+
+/// Block height/timestamp
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct BlockHeight(pub u64);
+
+impl BlockHeight {
+    pub fn as_u64(&self) -> u64 {
+        self.0
+    }
+
+    pub fn zero() -> Self {
+        Self(0)
+    }
+
+    pub fn from_u64(value: u64) -> Self {
+        Self(value)
+    }
+
+    pub fn increment(&self) -> Self {
+        Self(self.0.saturating_add(1))
+    }
+
+    pub fn checked_add(&self, other: u64) -> Option<Self> {
+        self.0.checked_add(other).map(Self)
+    }
+}
+
+/// Unix timestamp in seconds
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Timestamp(pub u64);
+
+impl Timestamp {
+    pub fn as_u64(&self) -> u64 {
+        self.0
+    }
+
+    pub fn now() -> Self {
+        Self(std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs())
+    }
+
+    pub fn from_u64(value: u64) -> Self {
+        Self(value)
+    }
+
+    pub fn checked_add(&self, seconds: u64) -> Option<Self> {
+        self.0.checked_add(seconds).map(Self)
+    }
+
+    pub fn elapsed_since(&self, other: &Self) -> Option<std::time::Duration> {
+        self.0.checked_sub(other.0)
+            .map(|secs| std::time::Duration::from_secs(secs))
+    }
+}
+
+/// Validator set for consensus
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ValidatorSet {
+    pub validators: Vec<ValidatorInfo>,
+    pub threshold: usize, // Minimum validators needed for consensus
+    pub total_stake: u64,
+}
+
+impl ValidatorSet {
+    pub fn new(validators: Vec<ValidatorInfo>, threshold: usize) -> Self {
+        let total_stake = validators.iter().map(|v| v.stake).sum();
+        Self {
+            validators,
+            threshold,
+            total_stake,
+        }
+    }
+
+    pub fn is_quorum_reached(&self, signatures: usize) -> bool {
+        signatures >= self.threshold
+    }
+
+    pub fn get_validator(&self, public_key: &PublicKey) -> Option<&ValidatorInfo> {
+        self.validators.iter().find(|v| &v.public_key == public_key)
+    }
+
+    pub fn add_validator(&mut self, validator: ValidatorInfo) {
+        self.validators.push(validator.clone());
+        self.total_stake += validator.stake;
+        self.threshold = (self.validators.len() * 2 / 3) + 1; // 2/3 + 1 rule
+    }
+
+    pub fn remove_validator(&mut self, public_key: &PublicKey) -> bool {
+        if let Some(index) = self.validators.iter().position(|v| &v.public_key == public_key) {
+            let removed = self.validators.remove(index);
+            self.total_stake -= removed.stake;
+            self.threshold = (self.validators.len() * 2 / 3) + 1;
+            true
+        } else {
+            false
+        }
+    }
+}
+
+/// Validator information
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ValidatorInfo {
+    pub public_key: PublicKey,
+    pub name: String,
+    pub stake: u64,
+    pub reputation: f64,
+    pub is_active: bool,
+    pub joined_at: Timestamp,
+    pub last_seen: Timestamp,
+}
+
+/// Transaction data payload
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TransactionData {
+    pub contract_address: Option<Address>,
+    pub method: String,
+    pub parameters: Vec<u8>,
+    pub value: Amount,
+}
+
+impl TransactionData {
+    pub fn new(contract_address: Option<Address>, method: String, parameters: Vec<u8>, value: Amount) -> Self {
+        Self {
+            contract_address,
+            method,
+            parameters,
+            value,
+        }
+    }
+
+    pub fn simple_transfer(to: Address, amount: Amount) -> Self {
+        Self::new(
+            None,
+            "transfer".to_string(),
+            bincode::serialize(&(to, amount)).unwrap_or_default(),
+            amount,
+        )
+    }
+
+    pub fn contract_call(contract: Address, method: String, params: Vec<u8>) -> Self {
+        Self::new(
+            Some(contract),
+            method,
+            params,
+            Amount::zero(),
+        )
+    }
+}
+
+/// Block header with metadata
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BlockHeader {
+    pub height: BlockHeight,
+    pub timestamp: Timestamp,
+    pub previous_hash: Hash,
+    pub transactions_root: Hash,
+    pub state_root: Hash,
+    pub validator: PublicKey,
+    pub signature: Option<Vec<u8>>,
+    pub gas_used: Gas,
+    pub gas_limit: Gas,
+    pub transaction_count: u64,
+}
+
+impl BlockHeader {
+    pub fn new(
+        height: BlockHeight,
+        timestamp: Timestamp,
+        previous_hash: Hash,
+        transactions_root: Hash,
+        state_root: Hash,
+        validator: PublicKey,
+        gas_limit: Gas,
+    ) -> Self {
+        Self {
+            height,
+            timestamp,
+            previous_hash,
+            transactions_root,
+            state_root,
+            validator,
+            signature: None,
+            gas_used: Gas::zero(),
+            gas_limit,
+            transaction_count: 0,
+        }
+    }
+
+    pub fn hash(&self) -> Hash {
+        let data = bincode::serialize(self).unwrap_or_default();
+        Hash::new(&data)
+    }
+
+    pub fn sign(&mut self, private_key: &PrivateKey) -> Result<(), Box<dyn std::error::Error>> {
+        let data = bincode::serialize(&BlockHeader {
+            height: self.height.clone(),
+            timestamp: self.timestamp.clone(),
+            previous_hash: self.previous_hash.clone(),
+            transactions_root: self.transactions_root.clone(),
+            state_root: self.state_root.clone(),
+            validator: self.validator.clone(),
+            signature: None, // Don't include signature in signing data
+            gas_used: self.gas_used.clone(),
+            gas_limit: self.gas_limit.clone(),
+            transaction_count: self.transaction_count,
+        })?;
+
+        let signature = crate::pqcrypto::PQCrypto::sign(&data, &private_key.pq_key.as_ref().unwrap())?;
+        self.signature = Some(signature);
+        Ok(())
+    }
+
+    pub fn verify(&self) -> Result<bool, Box<dyn std::error::Error>> {
+        if self.signature.is_none() {
+            return Ok(false);
+        }
+
+        let data = bincode::serialize(&BlockHeader {
+            height: self.height.clone(),
+            timestamp: self.timestamp.clone(),
+            previous_hash: self.previous_hash.clone(),
+            transactions_root: self.transactions_root.clone(),
+            state_root: self.state_root.clone(),
+            validator: self.validator.clone(),
+            signature: None, // Don't include signature in verification data
+            gas_used: self.gas_used.clone(),
+            gas_limit: self.gas_limit.clone(),
+            transaction_count: self.transaction_count,
+        })?;
+
+        let public_key = crate::pqcrypto::PQPublicKey::from_bytes(&self.validator.as_bytes())?;
+        Ok(crate::pqcrypto::PQCrypto::verify(&data, &self.signature.as_ref().unwrap(), &public_key)?)
+    }
+}
+
+/// Improved Block structure
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BlockV2 {
+    pub header: BlockHeader,
+    pub transactions: Vec<Transaction>,
+    pub validator_set: ValidatorSet,
+    pub execution_results: Vec<TransactionExecutionResult>,
+}
+
+impl BlockV2 {
+    pub fn new(
+        header: BlockHeader,
+        transactions: Vec<Transaction>,
+        validator_set: ValidatorSet,
+    ) -> Self {
+        Self {
+            header,
+            transactions,
+            validator_set,
+            execution_results: Vec::new(),
+        }
+    }
+
+    pub fn hash(&self) -> Hash {
+        let data = bincode::serialize(self).unwrap_or_default();
+        Hash::new(&data)
+    }
+
+    pub fn calculate_transactions_root(&self) -> Hash {
+        let mut tx_hashes: Vec<Hash> = self.transactions.iter().map(|tx| tx.id).collect();
+        tx_hashes.sort();
+        let data = bincode::serialize(&tx_hashes).unwrap_or_default();
+        Hash::new(&data)
+    }
+
+    pub fn calculate_state_root(&self, state_machine: &crate::state_machine::StateMachine<crate::storage::Storage>) -> Hash {
+        state_machine.get_state_root().unwrap_or(Hash::new(b"empty_state"))
+    }
+
+    pub fn add_execution_results(&mut self, results: Vec<TransactionExecutionResult>) {
+        self.execution_results = results;
+    }
+}
+
+/// Transaction execution result for better error handling
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TransactionExecutionResult {
+    pub tx_hash: Hash,
+    pub success: bool,
+    pub gas_used: Gas,
+    pub gas_price: GasPrice,
+    pub execution_time_ms: u64,
+    pub error_message: Option<String>,
+    pub return_value: Option<Vec<u8>>,
+    pub logs: Vec<TransactionLog>,
+}
+
+/// Transaction log entry
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TransactionLog {
+    pub address: Address,
+    pub topics: Vec<Hash>,
+    pub data: Vec<u8>,
+}
+
+/// Network message types for better type safety
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum NetworkMessage {
+    Transaction(Transaction),
+    Block(BlockV2),
+    Consensus(crate::consensus::ConsensusMessage),
+    StateSync(crate::state_sync::StateSyncData),
+    HealthCheck(crate::health_monitor::NodeHealth),
+}
+
+/// Configuration for different network environments
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NetworkConfig {
+    pub listen_addr: String,
+    pub bootstrap_peers: Vec<String>,
+    pub max_peers: usize,
+    pub heartbeat_interval_ms: u64,
+    pub connection_timeout_ms: u64,
+    pub gossipsub_config: GossipSubConfig,
+    pub kad_config: KadConfig,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GossipSubConfig {
+    pub heartbeat_interval: std::time::Duration,
+    pub history_length: usize,
+    pub history_gossip: usize,
+    pub mesh_n: usize,
+    pub mesh_n_low: usize,
+    pub mesh_n_high: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct KadConfig {
+    pub k_bucket_size: usize,
+    pub replication_factor: usize,
+    pub query_timeout: std::time::Duration,
+    pub record_ttl: std::time::Duration,
+}
+
+/// Type-safe error handling
+#[derive(Debug, Clone)]
+pub enum BlockchainError {
+    ValidationError(String),
+    ExecutionError(String),
+    NetworkError(String),
+    StorageError(String),
+    ConsensusError(String),
+    CryptographicError(String),
+    ConfigurationError(String),
+}
+
+impl std::fmt::Display for BlockchainError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            BlockchainError::ValidationError(msg) => write!(f, "Validation error: {}", msg),
+            BlockchainError::ExecutionError(msg) => write!(f, "Execution error: {}", msg),
+            BlockchainError::NetworkError(msg) => write!(f, "Network error: {}", msg),
+            BlockchainError::StorageError(msg) => write!(f, "Storage error: {}", msg),
+            BlockchainError::ConsensusError(msg) => write!(f, "Consensus error: {}", msg),
+            BlockchainError::CryptographicError(msg) => write!(f, "Cryptographic error: {}", msg),
+            BlockchainError::ConfigurationError(msg) => write!(f, "Configuration error: {}", msg),
+        }
+    }
+}
+
+impl std::error::Error for BlockchainError {}
+
+/// Type-safe result type
+pub type BlockchainResult<T> = Result<T, BlockchainError>;
+
+/// Metrics collection for performance monitoring
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BlockchainMetrics {
+    pub timestamp: Timestamp,
+    pub block_height: BlockHeight,
+    pub transactions_per_second: f64,
+    pub average_block_time_ms: f64,
+    pub gas_used_per_block: u64,
+    pub active_validators: usize,
+    pub network_peers: usize,
+    pub mempool_size: usize,
+    pub state_size_mb: f64,
+    pub disk_usage_mb: f64,
+}
+
+/// Configuration validation
+pub trait Configurable {
+    fn validate_config(&self) -> BlockchainResult<()>;
+    fn get_config_summary(&self) -> String;
+}
+
+/// Health check status
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum HealthStatus {
+    Healthy,
+    Degraded(String),
+    Unhealthy(String),
+    Unknown,
+}
+
+impl HealthStatus {
+    pub fn is_healthy(&self) -> bool {
+        matches!(self, HealthStatus::Healthy)
+    }
+
+    pub fn is_degraded(&self) -> bool {
+        matches!(self, HealthStatus::Degraded(_))
+    }
+}
+
+/// Node information for network discovery
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NodeInfo {
+    pub node_id: PublicKey,
+    pub listen_addresses: Vec<String>,
+    pub version: String,
+    pub capabilities: Vec<String>,
+    pub last_seen: Timestamp,
+    pub reputation: f64,
+    pub is_validator: bool,
+    pub stake: Option<u64>,
+}
+
 impl Hash {
     pub fn new(data: &[u8]) -> Self {
         let mut hasher = Sha3_256::new();

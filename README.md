@@ -1,45 +1,57 @@
-# Symbios Network - Smart DAG Mempool Blockchain
+# Symbios Network - Research Blockchain Prototype
 
-🚀 **Revolutionary blockchain platform solving the trilemma through symbiotic architecture**
+⚠️ **EXPERIMENTAL RESEARCH PROJECT** ⚠️
 
 [![Rust](https://img.shields.io/badge/rust-1.89+-orange.svg)](https://www.rust-lang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-> **Solving the blockchain trilemma: Security, Scalability, and Decentralization - not through compromises, but through synergy.**
+> **Research prototype exploring DAG-based mempool design and post-quantum cryptography integration.**
 
 ## 📁 Repository Structure
 
-This repository contains the **Symbios Network MVP** - a research-grade blockchain implementation featuring:
+This repository contains the **Symbios Network Research Prototype** - an experimental blockchain implementation for research purposes:
 
-- **`symbios-mvp/`** - Main Rust implementation
-- **`README.md`** - Project overview and setup instructions
-- **`deploy_to_github.ps1`** - Automated GitHub deployment script
+- **`symbios-mvp/`** - Main Rust prototype implementation
+- **`README.md`** - Project overview and development status
+- **`deploy_to_github.ps1`** - Development deployment script
 
-## 🎯 What Makes Symbios Different
+## 🎯 Research Focus
 
-### Core Innovations
+### Current Implementation
 
-1. **Smart DAG Mempool** - Priority queue based on transaction fees, eliminating traditional FIFO bottlenecks
-2. **Hybrid Cryptography** - Ed25519 + Post-Quantum (ML-KEM, ML-DSA, SLH-DSA) for future-proof security
-3. **BFT Consensus** - Byzantine Fault Tolerance with economic sanctions for malicious validators
-4. **Parallel Execution** - OCC (Optimistic Concurrency Control) for transaction processing
+1. **Smart DAG Mempool** - Basic priority queue implementation with fee-based ordering
+2. **Post-Quantum Cryptography** - Integration with ML-KEM, ML-DSA, and SLH-DSA algorithms
+3. **Modular Architecture** - Clean separation of concerns across 20+ modules
+4. **Basic P2P Networking** - Libp2p integration for peer discovery and messaging
 
-### Production-Ready Features
+### Research Components
 
-- ✅ **P2P Networking** - Full libp2p implementation with state synchronization
-- ✅ **Production Storage** - RocksDB with indexing and persistence
-- ✅ **Monitoring & Metrics** - Prometheus + Grafana dashboards
-- ✅ **Security Framework** - Automated vulnerability scanning
-- ✅ **Formal Verification** - Mathematical proofs of consensus safety
-- ✅ **Comprehensive Testing** - 87%+ coverage with property-based testing
+- 🔬 **DAG Mempool Design** - Exploring transaction ordering and batching strategies
+- 🔬 **PQ Crypto Integration** - Post-quantum algorithm evaluation and testing
+- 🔬 **Modular Architecture** - Component-based design for easy experimentation
+- 🔬 **Basic Consensus Logic** - Simplified BFT concepts for research
 
-## 🚀 Quick Start
+## ⚠️ IMPORTANT DISCLAIMERS
+
+### 🚨 NOT PRODUCTION READY
+- **DO NOT USE in production environments**
+- **No security audit performed**
+- **Experimental cryptography implementation**
+- **Performance claims are theoretical targets only**
+
+### 🚨 CURRENT LIMITATIONS
+- **Simple demo consensus** (not real BFT)
+- **Basic transaction processing** (no parallel execution)
+- **Limited testing coverage** (not 87% as previously claimed)
+- **Research-grade networking** (not production P2P)
+- **Simplified state management** (negative balances allowed)
+
+## 🚀 Development Setup
 
 ### Prerequisites
 
 - **Rust 1.70+** - [Install Rust](https://rustup.rs/)
 - **Git** - Version control
-- **Optional**: Docker for containerized deployment
 
 ### Clone and Build
 
@@ -51,46 +63,50 @@ cd symbios-network/symbios-mvp
 # Build the project
 cargo build --release
 
-# Run tests
+# Run basic tests
 cargo test
 
-# Run benchmarks
+# Run benchmarks (limited scope)
 cargo bench
 ```
 
-### Run Demo
+### Run Research Demo
 
 ```bash
-# Simple node demo
+# Simple node demo (research purposes only)
 cargo run --bin simple_node
 
-# Production node
-cargo run --bin production_node
-
-# Network demo
+# Network demo (experimental)
 cargo run --bin network_demo
 ```
 
-## 📊 Performance Benchmarks
+## 📊 Current Status
 
-| Component | Current MVP | Target (Full Implementation) |
-|-----------|-------------|------------------------------|
-| **TPS** | 1-5k single node | 100k+ with cluster |
-| **Finality** | Instant (no rollbacks) | Instant |
-| **Latency** | 1-3 seconds | <1 second |
-| **Consensus** | BFT with sanctions | BFT with sanctions |
+| Component | Implementation Status | Notes |
+|-----------|---------------------|--------|
+| **DAG Mempool** | ✅ Basic implementation | Fee-based ordering, simplified batching |
+| **PQ Cryptography** | ✅ Integrated | ML-KEM, ML-DSA, SLH-DSA available |
+| **P2P Networking** | ✅ Basic libp2p | Peer discovery and messaging |
+| **Storage** | ✅ RocksDB integration | Basic persistence |
+| **Monitoring** | ✅ Basic metrics | Prometheus integration |
+| **Consensus** | ⚠️ Demo only | Simplified BFT logic |
+| **State Management** | ⚠️ Simplified | Basic account model |
+| **Security** | ⚠️ Research level | No production audit |
 
-## 🧪 Testing Suite
+## 🧪 Testing Status
 
-Symbios includes a **comprehensive testing framework**:
+Current testing includes:
 
-### Test Coverage: 87%+
+### Available Tests
+- **Unit Tests** - Core data structure validation
+- **Property-based Tests** - Mathematical property verification
+- **Integration Tests** - Basic component interaction
+- **Benchmark Tests** - Performance measurement
 
-- **Unit Tests** - 100+ test functions across all modules
-- **Integration Tests** - End-to-end workflows
-- **Property-based Tests** - Mathematical invariants validation
-- **Performance Benchmarks** - All critical operations
-- **Fuzz Testing** - Edge cases and error conditions
+### Test Coverage
+- **Current**: ~30-40% (estimated)
+- **Target**: Comprehensive coverage for research validation
+- **Note**: Previous claims of 87%+ coverage were inaccurate
 
 ### Running Tests
 
@@ -98,11 +114,7 @@ Symbios includes a **comprehensive testing framework**:
 # All tests
 cargo test
 
-# Specific module tests
-cargo test types::tests
-cargo test network::tests
-
-# Property-based tests
+# Property-based tests only
 cargo test proptests
 
 # Performance benchmarks
@@ -114,7 +126,7 @@ cargo bench
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   P2P Network   │    │   Consensus     │    │   Storage       │
-│   (libp2p)      │◄──►│   (BFT)         │◄──►│   (RocksDB)     │
+│   (libp2p)      │◄──►│   (Demo)        │◄──►│   (RocksDB)     │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
          │                       │                       │
          ▼                       ▼                       ▼
@@ -126,28 +138,27 @@ cargo bench
 
 ### Key Components
 
-- **Network Layer**: Gossipsub, Kademlia DHT, Request-Response protocols
-- **Consensus Engine**: BFT with economic sanctions and view changes
-- **Storage Engine**: RocksDB with block/transaction indexing
-- **Cryptography**: Hybrid Ed25519 + PQ cryptography
-- **Mempool**: Smart DAG with fee-based ordering
-- **Monitoring**: Real-time metrics and health checks
+- **Network Layer**: Basic libp2p integration with gossipsub messaging
+- **Consensus Engine**: Simplified demo consensus (not production BFT)
+- **Storage Engine**: RocksDB with basic transaction/block storage
+- **Cryptography**: Post-quantum algorithms integrated (research level)
+- **Mempool**: DAG-based with fee prioritization (experimental)
+- **Monitoring**: Basic Prometheus metrics collection
 
 ## 📚 Documentation
 
 ### Project Documentation
 
-- **[Main README](symbios-mvp/README.md)** - Complete project documentation
-- **[Production Guide](symbios-mvp/PRODUCTION_README.md)** - Production deployment
-- **[API Documentation](https://docs.rs/symbios-mvp)** - Generated Rust docs
-- **[Contributing Guide](symbios-mvp/CONTRIBUTING.md)** - Development guidelines
+- **[Main README](symbios-mvp/README.md)** - Detailed implementation documentation
+- **[Technical Documentation]** - Architecture and design decisions
+- **[API Documentation](https://docs.rs/symbios-mvp)** - Generated Rust documentation
 
 ### Technical Specifications
 
-- **Architecture**: Modular, async-first design
-- **Security**: Post-quantum cryptography ready
-- **Performance**: Optimized for high-throughput scenarios
-- **Scalability**: Horizontal scaling with state synchronization
+- **Architecture**: Modular, async-first design for research
+- **Security**: Post-quantum cryptography exploration
+- **Performance**: Research benchmarks and profiling
+- **Scalability**: Conceptual horizontal scaling design
 
 ## 🔧 Development
 
@@ -157,9 +168,9 @@ cargo bench
 # Install Rust toolchain
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
-# Install additional tools
+# Install development tools
 rustup component add clippy rustfmt
-cargo install cargo-audit cargo-tarpaulin
+cargo install cargo-audit
 ```
 
 ### Development Workflow
@@ -171,103 +182,68 @@ cargo fmt
 # Lint code
 cargo clippy
 
-# Security audit
-cargo audit
+# Run tests
+cargo test
 
-# Generate docs
+# Generate documentation
 cargo doc --open
-
-# Run specific tests
-cargo test --lib --package symbios-mvp -- types::tests
 ```
 
-## 🚢 Deployment
+## 🚀 Research Roadmap
 
-### Automated GitHub Deployment
+### Current Phase: Research & Experimentation
+- [x] **Basic DAG mempool implementation**
+- [x] **Post-quantum cryptography integration**
+- [x] **Modular architecture design**
+- [x] **Basic testing framework**
 
-```powershell
-# Run deployment script (Windows)
-.\deploy_to_github.ps1 -GitHubUsername "your_username" -RepositoryName "symbios-network"
-```
-
-### Manual Deployment
-
-1. Create repository on GitHub
-2. Add remote origin:
-   ```bash
-   git remote add origin https://github.com/your_username/symbios-network.git
-   ```
-3. Push to GitHub:
-   ```bash
-   git push -u origin master
-   ```
-
-### Docker Deployment
-
-```bash
-# Build container
-docker build -t symbios-network -f symbios-mvp/Dockerfile .
-
-# Run with monitoring stack
-docker-compose -f symbios-mvp/docker-compose.yml up
-```
-
-## 🎯 Roadmap
-
-### Phase 1: Research MVP ✅ (Current)
-- [x] Core blockchain implementation
-- [x] Smart DAG mempool
-- [x] PQ cryptography integration
-- [x] Comprehensive testing suite
-
-### Phase 2: Production Ready 🚧 (Next 3-6 months)
-- [ ] Third-party security audit
-- [ ] Performance benchmarking
-- [ ] HSM integration
-- [ ] Testnet deployment
-
-### Phase 3: Mainnet 🚀 (6-12 months)
-- [ ] Token launch and distribution
-- [ ] Validator network bootstrap
-- [ ] Governance system activation
-- [ ] DeFi ecosystem development
+### Future Research Directions
+- [ ] **Advanced consensus algorithms** - Move beyond demo implementation
+- [ ] **Production-grade security** - Comprehensive audit and hardening
+- [ ] **Performance optimization** - Real benchmarks and profiling
+- [ ] **State management** - Proper transaction validation and state transitions
+- [ ] **Network protocols** - Production-ready P2P implementation
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guide](symbios-mvp/CONTRIBUTING.md) for details.
+We welcome research contributions and experimental work!
 
-### Development Areas
-
-- 🔬 **Research**: Consensus algorithms, cryptography
-- 🛠️ **Engineering**: Performance optimization, networking
-- 🧪 **Testing**: Security research, formal verification
-- 📚 **Documentation**: Technical writing, tutorials
+### Research Areas
+- 🔬 **DAG Consensus** - Advanced mempool and consensus research
+- 🔬 **Post-Quantum Security** - Cryptography research and validation
+- 🔬 **Performance Engineering** - Optimization and benchmarking
+- 📚 **Documentation** - Technical writing and research papers
 
 ## 📄 License
 
 This project is licensed under the MIT License - see [LICENSE](symbios-mvp/LICENSE) file.
 
-## ⚠️ Important Notice
+## ⚠️ Important Research Notice
 
-**This is research/experimental software:**
-- Not audited for production security
-- Not suitable for mainnet deployment
-- Performance claims are theoretical targets
-- Use only for development and testing
+**This is experimental research software:**
+- **Not for production use** - Research prototype only
+- **No security guarantees** - Not audited or validated for security
+- **Educational purposes** - Designed for research and learning
+- **Experimental features** - May contain incomplete or untested code
+- **Use at your own risk** - For development and research only
 
 ## 🌟 Acknowledgments
 
+<<<<<<< HEAD
 Built by magish
+=======
+Built with ❤️ for blockchain research and education
+>>>>>>> 954f6d9 (docs: update documentation to reflect actual project status)
 
-*"Solving the blockchain trilemma through symbiotic architecture - not compromises, but synergy."*
-
----
-
-## 📞 Contact
-
-- **GitHub Issues**: [Bug reports & feature requests](https://github.com/YOUR_USERNAME/symbios-network/issues)
-- **Discussions**: [Technical discussions](https://github.com/YOUR_USERNAME/symbios-network/discussions)
+*"Exploring the frontiers of blockchain technology through research and experimentation."*
 
 ---
 
-**Ready to revolutionize blockchain architecture?** 🚀✨
+## 📞 Contact & Community
+
+- **GitHub Issues**: [Bug reports & technical discussions](https://github.com/YOUR_USERNAME/symbios-network/issues)
+- **Research Discussions**: [Academic and technical exchanges](https://github.com/YOUR_USERNAME/symbios-network/discussions)
+
+---
+
+**Research • Experiment • Learn** 🔬✨

@@ -1,101 +1,74 @@
-# 🚀 Symbios Network - Smart DAG Mempool Blockchain
+# 🔬 Symbios Network - Research Blockchain Prototype
 
 [![Rust](https://img.shields.io/badge/rust-1.89+-orange.svg)](https://www.rust-lang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Build Status](https://img.shields.io/badge/build-research--mvp-blue.svg)]()
+[![Status](https://img.shields.io/badge/status-research--prototype-orange.svg)]()
 
-> Revolutionary blockchain platform solving the trilemma through symbiotic architecture
+> **Research prototype exploring DAG-based mempool design and post-quantum cryptography**
 
-## ⚠️ **IMPORTANT: Research MVP Status**
+## ⚠️ **CRITICAL: Research Status Only**
 
-**🚨 THIS IS NOT PRODUCTION READY - USE FOR RESEARCH/EDUCATION ONLY**
+**🚨 THIS IS EXPERIMENTAL RESEARCH SOFTWARE - NOT FOR PRODUCTION USE**
 
-**What's implemented:**
-- ✅ Smart DAG Mempool with fee-based priority ordering
-- ✅ BFT Consensus with Byzantine sanctions system
-- ✅ Real Ed25519 cryptographic signatures (transactions & blocks)
-- ✅ Parallel transaction execution with OCC
-- ✅ **Full P2P Network Layer with libp2p** 🚀
-- ✅ **Production-grade storage with RocksDB** 💾
-- ✅ **Real Post-Quantum Cryptography (ML-KEM, ML-DSA, SLH-DSA)** 🔒
-- ✅ **State Synchronization Protocol** 🔄
-- ✅ **PQ Crypto Integration in Core Workflow** 🔐
-- ✅ **Security Audit Framework** 🔍
-- ✅ **Node Health Monitoring & Checks** 🏥
-- ✅ **Formal Verification of Consensus** 📋
-- ✅ **Complete Tokenomics & Economic Incentives** 💰
-- ✅ **Comprehensive Test Suite** 🧪
-- ✅ **Performance Benchmarks with Criterion** 📊
-- ✅ **Property-based Testing with Proptest** 🔬
-- ✅ Prometheus metrics & Grafana monitoring
-- ✅ Docker deployment stack
+**What is actually implemented:**
+- ✅ **Smart DAG Mempool** - Basic fee-based priority queue implementation
+- ✅ **Post-Quantum Cryptography** - Integration with ML-KEM, ML-DSA, SLH-DSA algorithms
+- ✅ **Modular Architecture** - Clean separation across 20+ modules
+- ✅ **Basic P2P Networking** - Libp2p integration for peer discovery
+- ✅ **Basic Storage** - RocksDB with simple persistence
+- ✅ **Basic Monitoring** - Prometheus metrics collection
+- ✅ **Testing Framework** - Unit, property-based, and benchmark tests
 
-**What's NOT production ready:**
-- ❌ Third-party security audit
-- ❌ Mainnet deployment
-- ❌ Large-scale performance testing
+**What is NOT implemented (contrary to previous claims):**
+- ❌ **Real BFT Consensus** - Only simplified demo consensus
+- ❌ **Parallel Transaction Execution** - Sequential processing only
+- ❌ **Production-grade Security** - No security audit performed
+- ❌ **State Synchronization** - Basic implementation only
+- ❌ **Complete Tokenomics** - Simplified economic model
+- ❌ **Production P2P Network** - Research-grade implementation
+- ❌ **87%+ Test Coverage** - Actually ~30-40% coverage
 
-**Current realistic performance:** 1-5k TPS single node (not 100k+ claimed in marketing)
+**Realistic current performance:** <100 TPS in demo mode (not 1-5k as previously claimed)
 
-## ⚡ Performance Overview
-
-| Metric | Current MVP | Target (Full Implementation) |
-|--------|-------------|------------------------------|
-| **TPS** | 1-5k single node | 100k+ with cluster |
-| **Finality** | Instant (no rollbacks) | Instant |
-| **Latency** | 1-3 seconds | <1 second |
-| **Consensus** | BFT with sanctions | BFT with sanctions |
-
-## 🎯 What Makes Symbios Different
+## 🎯 Research Focus Areas
 
 ### 1. **Smart DAG Mempool**
-- Priority queue based on transaction fees (BinaryHeap)
-- Eliminates traditional FIFO bottlenecks
-- Parallel transaction propagation
+- Basic priority queue implementation using BinaryHeap
+- Fee-based transaction ordering (research exploration)
+- Simplified batching and certificate collection
 
-### 2. **Byzantine Fault Tolerant Consensus**
-- Modified pBFT with 2f+1 threshold
-- Economic sanctions for misbehaving validators
-- Instant finality without rollback risk
+### 2. **Simplified Consensus Logic**
+- Demo consensus implementation (not production BFT)
+- Basic validator set management
+- Research exploration of consensus mechanisms
 
-### 3. **Real Cryptography (Ed25519)**
-```rust
-// Real transaction signing
-let (public_key, private_key) = Transaction::generate_keypair();
-transaction.sign(&private_key)?;
-assert!(transaction.verify()?);
-```
+### 3. **Post-Quantum Cryptography Integration**
+- Integration with real PQ algorithms (ML-KEM, ML-DSA, SLH-DSA)
+- Research validation of NIST-standardized algorithms
+- Cryptographic module design for future quantum resistance
 
-### 4. **Full P2P Network Layer**
-- **libp2p-based** with Gossipsub, Kademlia DHT, and Request-Response
-- **Automatic peer discovery** and routing
-- **Topic-based messaging** for transactions, blocks, and consensus
-- **Noise encryption** for secure communication
-- **Network manager** for multiple network interfaces
+### 4. **Modular Architecture**
+- Clean separation of concerns across 20+ modules
+- Async-first design with Tokio runtime
+- Research platform for component experimentation
 
-### 5. **Production-Grade Storage**
-- **RocksDB backend** for persistent data storage
-- **Block storage** with height-based indexing
-- **Transaction indexing** with hash-based lookup
-- **State management** with atomic operations
-- **High performance** with optimized read/write patterns
+### 5. **Basic P2P Networking**
+- Libp2p integration for peer discovery and messaging
+- Gossipsub protocol implementation
+- Research exploration of network protocols
 
-### 6. **Post-Quantum Cryptography**
-- **ML-KEM-1024** for quantum-resistant key encapsulation
-- **ML-DSA-65** for fast digital signatures
-- **SLH-DSA-SHAKE256f** for long-term hash-based signatures
-- **Full NIST standardization** compliance
-- **Multi-algorithm support** for different security levels
+### 6. **Storage Layer**
+- RocksDB integration for basic persistence
+- Simple transaction and block storage
+- Foundation for more advanced storage research
 
 ```rust
-// Create production-grade storage
-let storage = Box::new(Storage::new("./data")?) as Box<dyn StorageTrait + Send + Sync>;
+// Example: Create basic storage for research
+let storage = Storage::new("./research_data")?;
 
-// Create and start network with storage
-let mut network = Network::new(storage).await?;
+// Example: Basic network setup for testing
+let network = Network::new(Box::new(storage)).await?;
 network.listen("/ip4/127.0.0.1/tcp/0").await?;
-
-// Broadcast transaction
 let tx = Transaction::new(sender, receiver, 100, 0);
 network.broadcast_transaction(&tx).await?;
 

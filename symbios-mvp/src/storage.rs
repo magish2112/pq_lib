@@ -14,6 +14,8 @@ pub trait StorageTrait {
     async fn get_latest_block(&self) -> Result<Option<Block>, Box<dyn std::error::Error>>;
     async fn store_state(&self, state: &State) -> Result<(), Box<dyn std::error::Error>>;
     async fn get_state(&self) -> Result<State, Box<dyn std::error::Error>>;
+    async fn store_transaction_receipt(&self, receipt: &crate::state_machine::TransactionReceipt) -> Result<(), Box<dyn std::error::Error>>;
+    async fn get_transaction_receipt(&self, tx_hash: &Hash) -> Result<Option<crate::state_machine::TransactionReceipt>, Box<dyn std::error::Error>>;
 }
 
 /// RocksDB-based storage implementation
@@ -149,6 +151,24 @@ impl StorageTrait for Storage {
                 // Return default state if none stored
                 Ok(State::new())
             }
+        }
+    }
+
+    async fn store_transaction_receipt(&self, receipt: &crate::state_machine::TransactionReceipt) -> Result<(), Box<dyn std::error::Error>> {
+        let key = Self::key("receipt_", &receipt.tx_hash);
+        let value = bincode::serialize(receipt)?;
+        self.db.put(key, value)?;
+        Ok(())
+    }
+
+    async fn get_transaction_receipt(&self, tx_hash: &Hash) -> Result<Option<crate::state_machine::TransactionReceipt>, Box<dyn std::error::Error>> {
+        let key = Self::key("receipt_", tx_hash);
+        match self.db.get(key)? {
+            Some(data) => {
+                let receipt = bincode::deserialize(&data)?;
+                Ok(Some(receipt))
+            }
+            None => Ok(None)
         }
     }
 }
