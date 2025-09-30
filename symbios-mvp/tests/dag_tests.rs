@@ -1,5 +1,8 @@
 //! DAG Mempool Unit Tests
 //!
+//! Comprehensive test suite for DAG invariants, transaction ordering,
+//! dependency checking, and mempool functionality.
+//!
 //! Tests for DAG invariants, transaction ordering, and dependency checking.
 
 use symbios_mvp::types::{Transaction, PublicKey, Hash};

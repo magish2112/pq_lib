@@ -33,10 +33,15 @@ pub mod state_sync;            // State synchronization (deprecated)
 pub mod security_audit;        // Legacy security audit (deprecated)
 pub mod formal_verification;   // Formal verification (deprecated)
 pub mod economics;             // Economics (deprecated)
-pub mod pqcrypto;              // Post-quantum crypto (deprecated)
 pub mod production_node;       // Production node (deprecated)
 pub mod simple_node;           // Simple node (deprecated)
 pub mod proptests;             // Property-based tests (deprecated)
+
+/// Future/Experimental Modules (actively developed)
+pub mod pqcrypto;              // Post-quantum crypto (actively used in types.rs)
+pub mod adaptive_crypto;       // Adaptive cryptography with algorithm rotation
+pub mod ai_dos_protection;     // AI-powered DoS protection and traffic analysis
+pub mod advanced_consensus;    // Advanced consensus with attack resistance
 
 // Core Protocol Exports
 pub use types::*;
