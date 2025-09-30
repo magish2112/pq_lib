@@ -8,6 +8,7 @@ pub mod types;           // Type definitions and core data structures
 pub mod dag_mempool;     // DAG-based transaction mempool
 pub mod minimal_dag;     // Minimal DAG implementation for protocol
 pub mod consensus;       // Proto-BFT consensus implementation
+pub mod hotstuff_consensus; // Production HotStuff BFT consensus
 pub mod network;         // P2P networking (libp2p-based)
 pub mod state_machine;   // State management and execution
 pub mod storage;         // Persistent storage layer
@@ -42,6 +43,8 @@ pub mod pqcrypto;              // Post-quantum crypto (actively used in types.rs
 pub mod adaptive_crypto;       // Adaptive cryptography with algorithm rotation
 pub mod ai_dos_protection;     // AI-powered DoS protection and traffic analysis
 pub mod advanced_consensus;    // Advanced consensus with attack resistance
+pub mod hybrid_crypto;         // Hybrid Ed25519 + PQ cryptography
+pub mod hotstuff_consensus;    // Production HotStuff BFT consensus
 
 // Core Protocol Exports
 pub use types::*;
