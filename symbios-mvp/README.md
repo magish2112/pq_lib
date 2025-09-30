@@ -507,6 +507,6 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE) file.
 
 ---
 
-**Built with ❤️ and ⚡ by blockchain researchers**
+
 
 *"Solving the blockchain trilemma through symbiotic architecture - not compromises, but synergy."*
