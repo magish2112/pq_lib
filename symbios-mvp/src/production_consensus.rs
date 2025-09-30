@@ -255,7 +255,7 @@ impl<S: StorageTrait + Send + Sync + 'static, N: NetworkTrait + Send + Sync + 's
         let threshold = (validators.len() * 2 / 3) + 1; // 2/3 + 1 rule
         let validator_set = ValidatorSet::new(validators, threshold);
 
-        *self.validator_set.write().unwrap() = validator_set;
+        *self.validator_set.write().map_err(|_| BlockchainError::LockPoisoned)? = validator_set;
 
         Ok(())
     }
@@ -349,7 +349,7 @@ impl<S: StorageTrait + Send + Sync + 'static, N: NetworkTrait + Send + Sync + 's
         }
 
         // Store PrePrepare message
-        let mut pre_prepare = self.pre_prepare_messages.write().unwrap();
+        let mut pre_prepare = self.pre_prepare_messages.write().map_err(|_| BlockchainError::LockPoisoned)?;
         pre_prepare.entry(block_hash).or_insert_with(Vec::new).push(
             ConsensusMessage::PrePrepare { view, block_hash, block: block.clone(), proposer: proposer.clone(), timestamp: Timestamp::now() }
         );
@@ -375,12 +375,12 @@ impl<S: StorageTrait + Send + Sync + 'static, N: NetworkTrait + Send + Sync + 's
         }
 
         // Store Prepare message
-        let mut prepare_messages = self.prepare_messages.write().unwrap();
+        let mut prepare_messages = self.prepare_messages.write().map_err(|_| BlockchainError::LockPoisoned)?;
         prepare_messages.entry(block_hash).or_insert_with(HashSet::new).insert(validator);
 
         // Check if we have enough Prepare messages
         if let Some(prepares) = prepare_messages.get(&block_hash) {
-            let validator_set = self.validator_set.read().unwrap();
+            let validator_set = self.validator_set.read().map_err(|_| BlockchainError::LockPoisoned)?;
             if prepares.len() >= validator_set.threshold {
                 // Send Commit message
                 self.send_commit_message(view, block_hash).await?;
@@ -403,12 +403,12 @@ impl<S: StorageTrait + Send + Sync + 'static, N: NetworkTrait + Send + Sync + 's
         }
 
         // Store Commit message
-        let mut commit_messages = self.commit_messages.write().unwrap();
+        let mut commit_messages = self.commit_messages.write().map_err(|_| BlockchainError::LockPoisoned)?;
         commit_messages.entry(block_hash).or_insert_with(HashSet::new).insert(validator);
 
         // Check if we have enough Commit messages to finalize
         if let Some(commits) = commit_messages.get(&block_hash) {
-            let validator_set = self.validator_set.read().unwrap();
+            let validator_set = self.validator_set.read().map_err(|_| BlockchainError::LockPoisoned)?;
             if commits.len() >= validator_set.threshold {
                 self.finalize_block(view, block_hash).await?;
             }
