@@ -1,0 +1,329 @@
+﻿cargo.exe : warning: virtual workspace defaulting to `resolver = "1"` despite one or more workspace members being on edition 2
+021 which implies `resolver = "2"`
+строка:1 знак:183
++ ... $env:Path"; & "C:\Users\$env:USERNAME\.cargo\bin\cargo.exe" test --al ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (warning: virtua...resolver = "2"`:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+note: to keep the current resolver, specify `workspace.resolver = "1"` in the workspace root's manifest
+note: to use the edition 2021 resolver, specify `workspace.resolver = "2"` in the workspace root's manifest
+note: for more details see https://doc.rust-lang.org/cargo/reference/resolver.html#resolver-versions
+ Downloading crates ...
+  Downloaded ciborium-io v0.2.2
+  Downloaded anstyle v1.0.11
+  Downloaded rand_xorshift v0.4.0
+  Downloaded crossbeam-deque v0.8.6
+  Downloaded oorandom v11.1.5
+  Downloaded tinytemplate v1.2.1
+  Downloaded tokio-stream v0.1.17
+  Downloaded tokio-test v0.4.4
+  Downloaded same-file v1.0.6
+  Downloaded rusty-fork v0.3.0
+  Downloaded bit-set v0.8.0
+  Downloaded async-stream-impl v0.3.6
+  Downloaded plotters-backend v0.3.7
+  Downloaded rayon v1.11.0
+  Downloaded ciborium v0.2.2
+  Downloaded bit-vec v0.8.0
+  Downloaded async-stream v0.3.6
+  Downloaded quick-error v1.2.3
+  Downloaded criterion-plot v0.5.0
+   Compiling crossbeam-utils v0.8.21
+   Compiling rayon-core v1.13.0
+   Compiling half v2.6.0
+   Compiling ciborium-io v0.2.2
+   Compiling plotters-backend v0.3.7
+   Compiling clap_lex v0.7.5
+   Compiling anstyle v1.0.11
+   Compiling same-file v1.0.6
+   Compiling itertools v0.10.5
+   Compiling clap_builder v4.5.47
+   Compiling plotters-svg v0.3.7
+   Compiling async-stream-impl v0.3.6
+   Compiling bit-vec v0.8.0
+   Compiling wait-timeout v0.2.1
+   Compiling ciborium-ll v0.2.2
+   Compiling cast v0.3.0
+   Compiling quick-error v1.2.3
+   Compiling bit-set v0.8.0
+   Compiling rusty-fork v0.3.0
+   Compiling ciborium v0.2.2
+   Compiling plotters v0.3.7
+   Compiling walkdir v2.5.0
+   Compiling async-stream v0.3.6
+   Compiling crossbeam-epoch v0.9.18
+   Compiling tinytemplate v1.2.1
+   Compiling rand_xorshift v0.4.0
+   Compiling tokio-stream v0.1.17
+   Compiling oorandom v11.1.5
+   Compiling anes v0.1.6
+   Compiling crossbeam-deque v0.8.6
+   Compiling unarray v0.1.4
+   Compiling criterion-plot v0.5.0
+   Compiling bitflags v2.9.4
+   Compiling tokio-test v0.4.4
+   Compiling symbios-mvp v0.1.0 (D:\╨┐╤А╨╛╨╡╨║╤В╤Л\symbios\symbios-mvp)
+   Compiling proptest v1.8.0
+   Compiling clap v4.5.47
+   Compiling rayon v1.11.0
+warning: unused imports: `Rng` and `rngs::OsRng`
+ --> symbios-mvp\src\types.rs:9:12
+  |
+9 | use rand::{Rng, rngs::OsRng};
+  |            ^^^  ^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `std::collections::HashMap`
+ --> symbios-mvp\src\consensus.rs:1:5
+  |
+1 | use std::collections::HashMap;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `BTreeMap`
+ --> symbios-mvp\src\hotstuff_consensus.rs:8:52
+  |
+8 | use std::collections::{HashMap, HashSet, VecDeque, BTreeMap};
+  |                                                    ^^^^^^^^
+
+warning: unused imports: `broadcast` and `oneshot`
+  --> symbios-mvp\src\hotstuff_consensus.rs:12:48
+   |
+12 | use tokio::sync::{RwLock as AsyncRwLock, mpsc, oneshot, broadcast};
+   |                                                ^^^^^^^  ^^^^^^^^^
+
+warning: unused import: `futures::future::join_all`
+  --> symbios-mvp\src\hotstuff_consensus.rs:13:5
+   |
+13 | use futures::future::join_all;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `BlockHeight`, `BlockchainError`, `BlockchainResult`, and `ValidatorInfo`
+  --> symbios-mvp\src\hotstuff_consensus.rs:14:69
+   |
+14 | ... PublicKey, PrivateKey, BlockHeight, Timestamp, ValidatorSet, ValidatorInfo, BlockchainError, BlockchainResult};
+   |                            ^^^^^^^^^^^                           ^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^
+
+warning: unused import: `StateResult`
+  --> symbios-mvp\src\hotstuff_consensus.rs:15:42
+   |
+15 | use crate::state_machine::{StateMachine, StateResult};
+   |                                          ^^^^^^^^^^^
+
+warning: unused imports: `Amount` and `Nonce`
+  --> symbios-mvp\src\state_machine.rs:10:66
+   |
+10 | use crate::types::{Transaction, Block, PublicKey, Hash, Address, Amount, Nonce};
+   |                                                                  ^^^^^^  ^^^^^
+
+warning: unused imports: `Deserialize` and `Serialize`
+ --> symbios-mvp\src\storage.rs:1:13
+  |
+1 | use serde::{Deserialize, Serialize};
+  |             ^^^^^^^^^^^  ^^^^^^^^^
+
+warning: unused import: `VecDeque`
+ --> symbios-mvp\src\efficient_execution.rs:7:42
+  |
+7 | use std::collections::{HashMap, HashSet, VecDeque};
+  |                                          ^^^^^^^^
+
+warning: unused imports: `Hash`, `PrivateKey`, `PublicKey`, and `Signature`
+ --> symbios-mvp\src\pqcrypto.rs:6:20
+  |
+6 | use crate::types::{PublicKey, PrivateKey, Signature, Hash};
+  |                    ^^^^^^^^^  ^^^^^^^^^^  ^^^^^^^^^  ^^^^
+
+error[E0502]: cannot borrow `*self` as mutable because it is also borrowed as immutable
+   --> symbios-mvp\src\hotstuff_consensus.rs:282:17
+    |
+275 |         let mut buffer = self.message_buffer.write().unwrap();
+    |                          ------------------- immutable borrow occurs here
+...
+282 |                 self.process_message_internal(msg).await?;
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ mutable borrow occurs here
+...
+289 |     }
+    |     - immutable borrow might be used here, when `buffer` is dropped and runs the `Drop` code for type `std::sync::RwLock
+WriteGuard`
+
+warning: unused variable: `vote_data`
+   --> symbios-mvp\src\hotstuff_consensus.rs:356:13
+    |
+356 |         let vote_data = self.serialize_vote(&vote)?;
+    |             ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_vote_data`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `sender`
+   --> symbios-mvp\src\hotstuff_consensus.rs:443:97
+    |
+443 | ...Hash, qc: QuorumCertificate, sender: PublicKey) -> Result<(), Box<dyn std::error::Error>> {
+    |                                 ^^^^^^ help: if this is intentional, prefix it with an underscore: `_sender`
+
+warning: unused variable: `sender`
+   --> symbios-mvp\src\hotstuff_consensus.rs:462:94
+    |
+462 | ...Hash, qc: QuorumCertificate, sender: PublicKey) -> Result<(), Box<dyn std::error::Error>> {
+    |                                 ^^^^^^ help: if this is intentional, prefix it with an underscore: `_sender`
+
+warning: unused variable: `sender`
+   --> symbios-mvp\src\hotstuff_consensus.rs:475:98
+    |
+475 | ...Hash, qc: QuorumCertificate, sender: PublicKey) -> Result<(), Box<dyn std::error::Error>> {
+    |                                 ^^^^^^ help: if this is intentional, prefix it with an underscore: `_sender`
+
+warning: unused variable: `view_number`
+   --> symbios-mvp\src\hotstuff_consensus.rs:505:37
+    |
+505 |     async fn handle_new_view(&self, view_number: u64, justify: QuorumCertificate, sender: PublicKey) -> Result<(), Box<d
+yn std::error::Er...
+    |                                     ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_view_numbe
+r`
+
+warning: unused variable: `sender`
+   --> symbios-mvp\src\hotstuff_consensus.rs:505:83
+    |
+505 | ... justify: QuorumCertificate, sender: PublicKey) -> Result<(), Box<dyn std::error::Error>> {
+    |                                 ^^^^^^ help: if this is intentional, prefix it with an underscore: `_sender`
+
+warning: unused variable: `view_number`
+   --> symbios-mvp\src\hotstuff_consensus.rs:583:34
+    |
+583 |     async fn create_block(&self, view_number: u64, transactions: Vec<Transaction>, justify_qc: QuorumCertificate) -> Res
+ult<Block, Box<dy...
+    |                                  ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_view_number`
+
+warning: unused variable: `transactions`
+   --> symbios-mvp\src\hotstuff_consensus.rs:583:52
+    |
+583 | ...elf, view_number: u64, transactions: Vec<Transaction>, justify_qc: QuorumCertificate) -> Result<Block, Box<dyn std::e
+rror::Error>> {
+    |                           ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_transactions`
+
+warning: unused variable: `justify_qc`
+   --> symbios-mvp\src\hotstuff_consensus.rs:583:84
+    |
+583 | ...tions: Vec<Transaction>, justify_qc: QuorumCertificate) -> Result<Block, Box<dyn std::error::Error>> {
+    |                             ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_justify_qc`
+
+warning: unused variable: `message`
+   --> symbios-mvp\src\hotstuff_consensus.rs:598:38
+    |
+598 |     async fn validate_message(&self, message: &HotStuffMessage) -> Result<(), Box<dyn std::error::Error>> {
+    |                                      ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_message`
+
+error[E0596]: cannot borrow data in an `Arc` as mutable
+   --> symbios-mvp\src\hotstuff_consensus.rs:615:29
+    |
+615 |             if let Err(e) = consensus.process_message(message).await {
+    |                             ^^^^^^^^^ cannot borrow as mutable
+    |
+    = help: trait `DerefMut` is required to modify through a dereference, but it is not implemented for `Arc<HotStuffConsensus
+<S>>`
+
+warning: unused variable: `tc`
+   --> symbios-mvp\src\hotstuff_consensus.rs:639:13
+    |
+639 |         let tc = TimeoutCertificate {
+    |             ^^ help: if this is intentional, prefix it with an underscore: `_tc`
+
+warning: unused variable: `commit_msg`
+   --> symbios-mvp\src\lightweight_consensus.rs:218:17
+    |
+218 |             let commit_msg = ConsensusMessage::Commit { block_hash, round };
+    |                 ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_commit_msg`
+
+warning: unused import: `futures::TryFutureExt`
+ --> symbios-mvp\src\state_machine.rs:9:5
+  |
+9 | use futures::TryFutureExt;
+  |     ^^^^^^^^^^^^^^^^^^^^^
+
+   Compiling criterion v0.5.1
+warning: unused variable: `parents`
+   --> symbios-mvp\src\dag_mempool.rs:497:9
+    |
+497 |         parents: Vec<Hash>,
+    |         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_parents`
+
+warning: unused variable: `owner`
+  --> symbios-mvp\src\state_machine.rs:52:16
+   |
+52 |     pub fn new(owner: PublicKey) -> Self {
+   |                ^^^^^ help: if this is intentional, prefix it with an underscore: `_owner`
+
+warning: unused variable: `processed_txs`
+   --> symbios-mvp\src\state_machine.rs:214:17
+    |
+214 |         let mut processed_txs = self.processed_txs.write().map_err(|_| StateError::LockPoisoned)?;
+    |                 ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_processed_txs`
+
+warning: variable does not need to be mutable
+   --> symbios-mvp\src\state_machine.rs:214:13
+    |
+214 |         let mut processed_txs = self.processed_txs.write().map_err(|_| StateError::LockPoisoned)?;
+    |             ----^^^^^^^^^^^^^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+warning: unused variable: `mempool`
+   --> symbios-mvp\src\lightweight_consensus.rs:275:9
+    |
+275 |         mempool: &mut dyn MempoolTrait,
+    |         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_mempool`
+
+error: future cannot be sent between threads safely
+   --> symbios-mvp\src\minimal_storage.rs:320:5
+    |
+320 |     async fn get_block_by_height(&self, height: u64) -> Result<Option<Block>, Box<dyn std::error::Error>> {
+    |     ^^^^^ future created by async block is not `Send`
+    |
+    = help: the trait `std::marker::Send` is not implemented for `dyn StdError`
+note: future is not `Send` as this value is used across an await
+   --> symbios-mvp\src\minimal_storage.rs:325:45
+    |
+322 |         match self.retrieve_entry(&height_key).await? {
+    |               --------------------------------------- has type `ControlFlow<Result<Infallible, Box<dyn StdError>>, std::
+option::Option<StorageEntry>>` which is not `Send`
+...
+325 |                 self.get_block(&block_hash).await
+    |                                             ^^^^^ await occurs here, with `self.retrieve_entry(&height_key).await?` mayb
+e used later
+    = note: required for the cast from `Pin<Box<{async block@symbios-mvp\src\minimal_storage.rs:320:5: 320:10}>>` to `Pin<Box<
+dyn Future<Output = Result<Option<Block>, Box<...>>> + Send>>`
+    = note: the full name for the type has been written to 'D:\╨┐╤А╨╛╨╡╨║╤В╤Л\symbios\target\debug\deps\symbios_mvp-1a29b2f16e
+ba198f.long-type-17405153728070938206.txt'
+    = note: consider using `--verbose` to print the full type name to the console
+
+error: future cannot be sent between threads safely
+   --> symbios-mvp\src\minimal_storage.rs:331:5
+    |
+331 |     async fn get_latest_block(&self) -> Result<Option<Block>, Box<dyn std::error::Error>> {
+    |     ^^^^^ future created by async block is not `Send`
+    |
+    = help: the trait `std::marker::Send` is not implemented for `dyn StdError`
+note: future is not `Send` as this value is used across an await
+   --> symbios-mvp\src\minimal_storage.rs:336:45
+    |
+333 |         match self.retrieve_entry(latest_key).await? {
+    |               -------------------------------------- has type `ControlFlow<Result<Infallible, Box<dyn StdError>>, std::o
+ption::Option<StorageEntry>>` which is not `Send`
+...
+336 |                 self.get_block(&block_hash).await
+    |                                             ^^^^^ await occurs here, with `self.retrieve_entry(latest_key).await?` maybe
+ used later
+    = note: required for the cast from `Pin<Box<{async block@symbios-mvp\src\minimal_storage.rs:331:5: 331:10}>>` to `Pin<Box<
+dyn Future<Output = Result<Option<Block>, Box<...>>> + Send>>`
+    = note: the full name for the type has been written to 'D:\╨┐╤А╨╛╨╡╨║╤В╤Л\symbios\target\debug\deps\symbios_mvp-1a29b2f16e
+ba198f.long-type-17405153728070938206.txt'
+    = note: consider using `--verbose` to print the full type name to the console
+
+Some errors have detailed explanations: E0502, E0596.
+For more information about an error, try `rustc --explain E0502`.
+warning: `symbios-mvp` (lib) generated 29 warnings
+error: could not compile `symbios-mvp` (lib) due to 4 previous errors; 29 warnings emitted
+warning: build failed, waiting for other jobs to finish...

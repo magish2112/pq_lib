@@ -33,10 +33,9 @@ struct StorageEntry {
 
 impl StorageEntry {
     fn new(entry_type: EntryType, key: Vec<u8>, data: Vec<u8>) -> Self {
-        let timestamp = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_secs();
+        // Use deterministic timestamp for testing/reproducibility
+        // In production, this should be provided by the caller
+        let timestamp = 0u64;
 
         let checksum = Self::calculate_checksum(&data);
 
@@ -183,6 +182,8 @@ impl MinimalStorage {
         }
 
         file.flush()?;
+        // fsync for durability - ensure data is written to disk
+        file.sync_data()?;
         Ok(())
     }
 

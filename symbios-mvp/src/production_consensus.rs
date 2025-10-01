@@ -248,7 +248,8 @@ impl<S: StorageTrait + Send + Sync + 'static, N: NetworkTrait + Send + Sync + 's
                     stake_amount: validator_info.stake,
                 };
 
-                self.validator_metrics.write().unwrap().insert(key_info.public_key, metrics);
+                self.validator_metrics.write().map_err(|_| BlockchainError::LockPoisoned)?
+                    .insert(key_info.public_key, metrics);
             }
         }
 
@@ -374,6 +375,17 @@ impl<S: StorageTrait + Send + Sync + 'static, N: NetworkTrait + Send + Sync + 's
             return Ok(());
         }
 
+        // Check for equivocation - validator sending Prepare for different blocks in same view
+        let prepare_messages = self.prepare_messages.read().map_err(|_| BlockchainError::LockPoisoned)?;
+        for (existing_block_hash, validators) in prepare_messages.iter() {
+            if *existing_block_hash != block_hash && validators.contains(&validator) {
+                // Equivocation detected - validator voted for different blocks in same view
+                self.apply_sanction(&validator, SanctionType::Equivocation, SanctionSeverity::Expulsion).await?;
+                return Ok(());
+            }
+        }
+        drop(prepare_messages); // Release read lock
+
         // Store Prepare message
         let mut prepare_messages = self.prepare_messages.write().map_err(|_| BlockchainError::LockPoisoned)?;
         prepare_messages.entry(block_hash).or_insert_with(HashSet::new).insert(validator);
@@ -401,6 +413,17 @@ impl<S: StorageTrait + Send + Sync + 'static, N: NetworkTrait + Send + Sync + 's
         if view != self.current_view.load(Ordering::Relaxed) {
             return Ok(());
         }
+
+        // Check for equivocation - validator sending Commit for different blocks in same view
+        let commit_messages = self.commit_messages.read().map_err(|_| BlockchainError::LockPoisoned)?;
+        for (existing_block_hash, validators) in commit_messages.iter() {
+            if *existing_block_hash != block_hash && validators.contains(&validator) {
+                // Equivocation detected - validator committed to different blocks in same view
+                self.apply_sanction(&validator, SanctionType::Equivocation, SanctionSeverity::Expulsion).await?;
+                return Ok(());
+            }
+        }
+        drop(commit_messages); // Release read lock
 
         // Store Commit message
         let mut commit_messages = self.commit_messages.write().map_err(|_| BlockchainError::LockPoisoned)?;
@@ -447,7 +470,7 @@ impl<S: StorageTrait + Send + Sync + 'static, N: NetworkTrait + Send + Sync + 's
     ) -> BlockchainResult<()> {
         // Update view and validator set
         self.current_view.store(view, Ordering::Relaxed);
-        *self.validator_set.write().unwrap() = validators;
+        *self.validator_set.write().map_err(|_| BlockchainError::LockPoisoned)? = validators;
 
         // Process pre-prepare messages from new view
         for msg in pre_prepare_messages {
@@ -462,7 +485,7 @@ impl<S: StorageTrait + Send + Sync + 'static, N: NetworkTrait + Send + Sync + 's
     /// Validate proposed block
     async fn validate_proposed_block(&self, block: &Block, proposer: &PublicKey) -> BlockchainResult<bool> {
         // Check if proposer is authorized
-        let validator_set = self.validator_set.read().unwrap();
+        let validator_set = self.validator_set.read().map_err(|_| BlockchainError::LockPoisoned)?;
         if !validator_set.get_validator(proposer).map_or(false, |v| v.is_active) {
             return Ok(false);
         }
@@ -539,7 +562,7 @@ impl<S: StorageTrait + Send + Sync + 'static, N: NetworkTrait + Send + Sync + 's
     /// Finalize block when consensus is reached
     async fn finalize_block(&self, view: u64, block_hash: Hash) -> BlockchainResult<()> {
         // Get the block from PrePrepare messages
-        let pre_prepare_messages = self.pre_prepare_messages.read().unwrap();
+        let pre_prepare_messages = self.pre_prepare_messages.read().map_err(|_| BlockchainError::LockPoisoned)?;
         let block_messages = pre_prepare_messages.get(&block_hash)
             .ok_or_else(|| BlockchainError::ConsensusError("No PrePrepare messages found".to_string()))?;
 
@@ -577,7 +600,7 @@ impl<S: StorageTrait + Send + Sync + 'static, N: NetworkTrait + Send + Sync + 's
         sanction_type: SanctionType,
         severity: SanctionSeverity,
     ) -> BlockchainResult<()> {
-        let mut metrics = self.validator_metrics.write().unwrap();
+        let mut metrics = self.validator_metrics.write().map_err(|_| BlockchainError::LockPoisoned)?;
         if let Some(validator_metrics) = metrics.get_mut(validator_id) {
             validator_metrics.sanctions_applied += 1;
             validator_metrics.reputation *= self.config.reputation_decay_rate;
@@ -609,7 +632,7 @@ impl<S: StorageTrait + Send + Sync + 'static, N: NetworkTrait + Send + Sync + 's
                 evidence: vec![],
             };
 
-            self.active_sanctions.write().unwrap()
+            self.active_sanctions.write().map_err(|_| BlockchainError::LockPoisoned)?
                 .entry(validator_id.clone())
                 .or_insert_with(Vec::new)
                 .push(sanction_record);
@@ -654,17 +677,35 @@ impl<S: StorageTrait + Send + Sync + 'static, N: NetworkTrait + Send + Sync + 's
     /// Get last stable checkpoint
     async fn get_last_stable_checkpoint(&self) -> BlockchainResult<u64> {
         // In production, this would return the last checkpoint height
-        Ok(self.state_machine.get_height().unwrap_or(0))
+        Ok(self.state_machine.get_height().map_err(|_| 0)?)
     }
 
     /// Check if we should initiate view change
     async fn should_initiate_view_change(&self) -> BlockchainResult<bool> {
         // Check if current leader is unresponsive or malicious
         let current_view = self.current_view.load(Ordering::Relaxed);
-        let validator_set = self.validator_set.read().unwrap();
+        let validator_set = self.validator_set.read().map_err(|_| BlockchainError::LockPoisoned)?;
 
-        // Simple heuristic: if no progress for too long, initiate view change
-        Ok(current_view % 5 == 0) // Every 5 views for demonstration
+        // Check for timeout since last block
+        let last_block_time = self.state_machine.get_last_block_timestamp().unwrap_or(0);
+        let current_time = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_secs();
+
+        let time_since_last_block = current_time.saturating_sub(last_block_time);
+
+        // Initiate view change if:
+        // 1. No block for more than view timeout
+        // 2. Leader is suspected of equivocation
+        // 3. Network partition detected
+
+        let should_change = time_since_last_block > self.config.view_timeout_ms / 1000;
+
+        // Additional check: if we received conflicting PrePrepare messages from leader
+        let pre_prepare_messages = self.pre_prepare_messages.read().map_err(|_| BlockchainError::LockPoisoned)?;
+        let conflicting_messages = pre_prepare_messages.len() > 1;
+
+        Ok(should_change || conflicting_messages)
     }
 
     /// Broadcast message to network
@@ -721,7 +762,7 @@ impl<S: StorageTrait + Send + Sync + 'static, N: NetworkTrait + Send + Sync + 's
 
     /// Update validator metrics
     async fn update_validator_metrics(&self, validator_id: PublicKey, success: bool) -> BlockchainResult<()> {
-        let mut metrics = self.validator_metrics.write().unwrap();
+        let mut metrics = self.validator_metrics.write().map_err(|_| BlockchainError::LockPoisoned)?;
         if let Some(validator_metrics) = metrics.get_mut(&validator_id) {
             validator_metrics.last_activity = Timestamp::now();
 
@@ -739,7 +780,7 @@ impl<S: StorageTrait + Send + Sync + 'static, N: NetworkTrait + Send + Sync + 's
 
     /// Get consensus statistics
     pub fn get_consensus_stats(&self) -> ConsensusStats {
-        self.consensus_stats.read().unwrap().clone()
+        self.consensus_stats.read().map_err(|_| BlockchainError::LockPoisoned)?.clone()
     }
 
     /// Get current view
@@ -749,12 +790,12 @@ impl<S: StorageTrait + Send + Sync + 'static, N: NetworkTrait + Send + Sync + 's
 
     /// Get current phase
     pub fn get_current_phase(&self) -> ConsensusPhase {
-        *self.current_phase.read().unwrap()
+        *self.current_phase.read().map_err(|_| ConsensusPhase::PrePrepare)?
     }
 
     /// Get validator set
     pub fn get_validator_set(&self) -> ValidatorSet {
-        self.validator_set.read().unwrap().clone()
+        self.validator_set.read().map_err(|_| ValidatorSet::new(vec![], 0))?.clone()
     }
 }
 
@@ -809,8 +850,8 @@ mod tests {
     use tempfile::TempDir;
 
     fn create_test_consensus() -> BftConsensus<Storage, Network> {
-        let temp_dir = TempDir::new().unwrap();
-        let storage = Storage::new(temp_dir.path()).unwrap();
+        let temp_dir = TempDir::new().map_err(|_| BlockchainError::StorageError("Failed to create temp dir".to_string()))?;
+        let storage = Storage::new(temp_dir.path()).map_err(|e| BlockchainError::StorageError(e.to_string()))?;
         let state_machine = Arc::new(StateMachine::new(storage, Hash::new(b"genesis")));
 
         let config = BftConfig {
@@ -845,7 +886,8 @@ mod tests {
         let hsm = Box::new(crate::hsm::ProductionHsm::new());
         let validator_kms = Arc::new(ValidatorKms::new(validator_config, hsm));
 
-        let network = Arc::new(Network::new(Box::new(Storage::new(temp_dir.path()).unwrap())).unwrap());
+        let network_storage = Storage::new(temp_dir.path()).map_err(|e| BlockchainError::StorageError(e.to_string()))?;
+        let network = Arc::new(Network::new(Box::new(network_storage)).map_err(|e| BlockchainError::NetworkError(e.to_string()))?);
 
         let execution_config = ParallelExecutionConfig {
             max_parallel_transactions: 100,
@@ -920,7 +962,7 @@ mod tests {
         // Test validator lookup
         let found_validator = validator_set.get_validator(&PublicKey::new("validator1".to_string()));
         assert!(found_validator.is_some());
-        assert_eq!(found_validator.unwrap().stake, 1000);
+        assert_eq!(found_validator.map(|v| v.stake).unwrap_or(0), 1000);
 
         // Test validator removal
         assert!(validator_set.remove_validator(&PublicKey::new("validator1".to_string())));

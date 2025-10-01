@@ -3,9 +3,9 @@
 //! This module provides high-performance parallel transaction execution
 //! using Optimistic Concurrency Control (OCC) for blockchain scalability.
 
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 use std::sync::{Arc, RwLock, atomic::{AtomicU64, Ordering}};
-use std::time::{Instant, Duration};
+use std::time::Duration;
 use tokio::sync::{mpsc, Semaphore};
 use serde::{Serialize, Deserialize};
 use futures::future::join_all;
@@ -100,7 +100,7 @@ impl<S: StorageTrait + Send + Sync + 'static> ParallelExecutionEngine<S> {
         transactions: Vec<Transaction>,
         block_height: u64,
     ) -> Result<Vec<TransactionExecutionResult>, Box<dyn std::error::Error>> {
-        let start_time = Instant::now();
+        let start_time = std::time::SystemTime::now();
         let mut results = Vec::new();
 
         // Phase 1: Read validation (check for conflicts)
@@ -276,7 +276,7 @@ impl<S: StorageTrait + Send + Sync + 'static> ParallelExecutionEngine<S> {
         tx: &Transaction,
         block_height: u64,
     ) -> TransactionExecutionResult {
-        let start_time = Instant::now();
+        let start_time = std::time::SystemTime::now();
 
         // Simulate execution (in real implementation, this would execute smart contract code)
         let execution_result = state_machine.validate_and_execute_transaction(tx, block_height);
@@ -563,14 +563,14 @@ impl<S: StorageTrait + Send + Sync + 'static> DagParallelExecutor<S> {
 
 /// DAG dependency analyzer
 pub struct DagAnalyzer {
-    dependency_cache: Arc<RwLock<HashMap<Hash, Vec<Hash>>>>,
+    dependency_cache: Arc<RwLock<BTreeMap<Hash, Vec<Hash>>>>,
 }
 
 impl DagAnalyzer {
     /// Create new DAG analyzer
     pub fn new() -> Self {
         Self {
-            dependency_cache: Arc::new(RwLock::new(HashMap::new())),
+            dependency_cache: Arc::new(RwLock::new(BTreeMap::new())),
         }
     }
 
@@ -579,7 +579,7 @@ impl DagAnalyzer {
         &self,
         transactions: &[Transaction],
     ) -> Result<DependencyGraph, Box<dyn std::error::Error>> {
-        let mut dependencies = HashMap::new();
+        let mut dependencies = BTreeMap::new();
 
         // Analyze each transaction for dependencies
         for tx in transactions {
@@ -767,7 +767,7 @@ mod tests {
         let transactions = vec![tx1.clone(), tx2.clone()];
 
         // This would normally be async, but for testing we'll create a simple dependency graph
-        let mut dependencies = HashMap::new();
+        let mut dependencies = BTreeMap::new();
         dependencies.insert(tx1.id, vec![]);
         dependencies.insert(tx2.id, vec![tx1.id]); // tx2 depends on tx1
 

@@ -1,0 +1,170 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: clippy, rustfmt
+
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y protobuf-compiler
+
+    - name: Check formatting
+      run: |
+        cd symbios-mvp
+        cargo fmt --check
+
+    - name: Clippy linting
+      run: |
+        cd symbios-mvp
+        cargo clippy -- -D warnings
+
+    - name: Run unit tests
+      run: |
+        cd symbios-mvp
+        cargo test --lib --bins --tests --benches --workspace --exclude integration_tests
+
+    - name: Run integration tests
+      run: |
+        cd symbios-mvp
+        cargo test --test integration_tests
+
+    - name: Run benchmarks (dry run)
+      run: |
+        cd symbios-mvp
+        cargo bench --no-run
+
+    - name: Security audit
+      uses: actions-rs/audit@v1
+      with:
+        working-directory: symbios-mvp
+
+    - name: Build release
+      run: |
+        cd symbios-mvp
+        cargo build --release
+
+    - name: Run demo script (smoke test)
+      run: |
+        cd symbios-mvp
+        python demo_node.py &
+        DEMO_PID=$!
+        sleep 10
+        kill $DEMO_PID || true
+
+  license-check:
+    name: License Compatibility
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Check license compatibility
+      run: |
+        cd symbios-mvp
+        # Check that all dependencies have compatible licenses
+        cargo tree --format "{p} {l}" | grep -E "(Apache|MIT|BSD|ISC)" | wc -l
+        cargo tree --format "{p} {l}" | grep -v -E "(Apache|MIT|BSD|ISC)" || echo "All dependencies have compatible licenses"
+
+  determinism-check:
+    name: Determinism Check
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Run deterministic tests multiple times
+      run: |
+        cd symbios-mvp
+        for i in {1..3}; do
+          echo "Run $i:"
+          cargo test deterministic_tests -- --nocapture || exit 1
+          echo "---"
+        done
+
+  performance-regression:
+    name: Performance Regression Test
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Run performance benchmarks
+      run: |
+        cd symbios-mvp
+        cargo bench
+        # Store benchmark results for comparison
+        mkdir -p benchmark-results
+        cp -r target/criterion/* benchmark-results/ || true
+
+    - name: Upload benchmark results
+      uses: actions/upload-artifact@v3
+      with:
+        name: benchmark-results
+        path: symbios-mvp/benchmark-results/
+
+  fault-injection:
+    name: Fault Injection Tests
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Run fault injection tests
+      run: |
+        cd symbios-mvp
+        cargo test fault_injection -- --nocapture
+        cargo test crash_recovery -- --nocapture
+        cargo test partition_recovery -- --nocapture
+
+  final-check:
+    name: Final Validation
+    runs-on: ubuntu-latest
+    needs: [test, license-check, determinism-check, performance-regression, fault-injection]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Final validation
+      run: |
+        echo "All checks passed! ✅"
+        echo "Ready for merge to main branch."

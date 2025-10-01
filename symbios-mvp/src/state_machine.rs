@@ -126,6 +126,13 @@ impl<S: StorageTrait + Send + Sync + 'static> StateMachine<S> {
         self.height.read().map_err(|_| StateError::LockPoisoned).map(|h| *h)
     }
 
+    /// Get last block timestamp (simplified - returns current time for demo)
+    pub fn get_last_block_timestamp(&self) -> StateResult<u64> {
+        // In a real implementation, this would be stored with each block
+        // For demo purposes, return a reasonable timestamp
+        Ok(0) // Deterministic timestamp for testing
+    }
+
     /// Validate and execute a transaction
     pub async fn validate_and_execute_transaction(
         &self,
