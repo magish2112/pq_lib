@@ -151,7 +151,7 @@ mod tests {
 
             let result = state.apply_block(&block);
             prop_assert!(result.is_ok(), "Block application should succeed");
-            prop_assert_eq!(state.height, height, "State height should be updated");
+            prop_assert_eq!(state.height.as_u64(), height, "State height should be updated");
             prop_assert_eq!(state.last_block_hash, block.hash(), "Last block hash should be updated");
         }
 
@@ -431,10 +431,10 @@ mod tests {
         let mut state = State::new();
         let max_key = PublicKey::new("max_key".to_string());
         state.accounts.insert(max_key.clone(), u64::MAX);
-        state.height = u64::MAX;
+        state.height = BlockHeight(u64::MAX);
 
         assert_eq!(*state.accounts.get(&max_key).unwrap(), u64::MAX);
-        assert_eq!(state.height, u64::MAX);
+        assert_eq!(state.height.as_u64(), u64::MAX);
     }
 
     #[test]

@@ -6,16 +6,22 @@
 
 use sha3::{Digest, Sha3_256};
 use ed25519_dalek::{Signer, Verifier, Signature as Ed25519Signature, SigningKey, VerifyingKey};
-use rand::rngs::OsRng;
+use rand::{Rng, rngs::OsRng};
 use serde::{Serialize, Deserialize};
 use crate::pqcrypto::{PQCrypto, PQPublicKey, PQPrivateKey, PQSignature};
 
 /// SHA3-256 hash type
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct Hash([u8; 32]);
 
+impl std::fmt::Display for Hash {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", hex::encode(&self.0))
+    }
+}
+
 /// Ethereum-style address (20 bytes)
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Address(pub [u8; 20]);
 
 impl Address {
@@ -46,7 +52,7 @@ impl Address {
 }
 
 /// Transaction amount (u64)
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Amount(pub u64);
 
 impl Amount {
@@ -64,7 +70,7 @@ impl Amount {
 }
 
 /// Account nonce for replay protection
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Nonce(pub u64);
 
 impl Nonce {
@@ -90,7 +96,7 @@ impl Nonce {
 }
 
 /// Gas price in wei (smallest unit)
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct GasPrice(pub u64);
 
 impl GasPrice {
@@ -116,7 +122,7 @@ impl GasPrice {
 }
 
 /// Gas amount for transaction execution
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Gas(pub u64);
 
 impl Gas {
@@ -142,8 +148,14 @@ impl Gas {
 }
 
 /// Block height/timestamp
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BlockHeight(pub u64);
+
+impl std::fmt::Display for BlockHeight {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
 
 impl BlockHeight {
     pub fn as_u64(&self) -> u64 {
@@ -168,8 +180,14 @@ impl BlockHeight {
 }
 
 /// Unix timestamp in seconds
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Timestamp(pub u64);
+
+impl std::fmt::Display for Timestamp {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
 
 impl Timestamp {
     pub fn as_u64(&self) -> u64 {
@@ -292,7 +310,7 @@ impl TransactionData {
 }
 
 /// Block header with metadata
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BlockHeader {
     pub height: BlockHeight,
     pub timestamp: Timestamp,
@@ -350,7 +368,7 @@ impl BlockHeader {
         })?;
 
         let signature = crate::pqcrypto::PQCrypto::sign(&data, &private_key.pq_key.as_ref().unwrap())?;
-        self.signature = Some(signature);
+        self.signature = Some(bincode::serialize(&signature)?);
         Ok(())
     }
 
@@ -372,8 +390,13 @@ impl BlockHeader {
             transaction_count: self.transaction_count,
         })?;
 
-        let public_key = crate::pqcrypto::PQPublicKey::from_bytes(&self.validator.as_bytes())?;
-        Ok(crate::pqcrypto::PQCrypto::verify(&data, &self.signature.as_ref().unwrap(), &public_key)?)
+        let signature_bytes = self.signature.as_ref().unwrap();
+        let pq_signature: crate::pqcrypto::PQSignature = bincode::deserialize(signature_bytes)?;
+        let public_key = crate::pqcrypto::PQPublicKey(self.validator.ed25519_key.clone());
+
+        let pq_valid = crate::pqcrypto::PQCrypto::verify(&data, &pq_signature, &public_key)?;
+
+        Ok(pq_valid)
     }
 }
 
@@ -448,8 +471,8 @@ pub enum NetworkMessage {
     Transaction(Transaction),
     Block(BlockV2),
     Consensus(crate::consensus::ConsensusMessage),
-    StateSync(crate::state_sync::StateSyncData),
-    HealthCheck(crate::health_monitor::NodeHealth),
+    StateSync(Vec<u8>), // Placeholder for state sync data
+    // HealthCheck(crate::health_monitor::NodeHealth), // disabled
 }
 
 /// Configuration for different network environments
@@ -603,7 +626,7 @@ impl PublicKey {
         let ed25519_key = hasher.finalize().to_vec();
 
         // Generate PQ keypair
-        let pq_keypair = PQCrypto::generate_signing_keypair()?;
+        let pq_keypair = PQCrypto::generate_keypair();
         let pq_key = pq_keypair.public_key;
 
         Ok(Self {
@@ -667,7 +690,7 @@ impl PrivateKey {
         let ed25519_key = hasher.finalize().to_vec();
 
         // Generate PQ keypair
-        let pq_keypair = PQCrypto::generate_signing_keypair()?;
+        let pq_keypair = PQCrypto::generate_keypair();
         let pq_key = pq_keypair.private_key;
 
         Ok(Self {
@@ -700,6 +723,19 @@ impl PrivateKey {
 
     pub fn pq_key(&self) -> Option<&PQPrivateKey> {
         self.pq_key.as_ref()
+    }
+
+    /// Get PQ key for consensus operations (owned)
+    pub fn pq_key_owned(&self) -> Option<PQPrivateKey> {
+        self.pq_key.clone()
+    }
+
+    /// Get public key for consensus operations
+    pub fn public_key(&self) -> Option<PublicKey> {
+        Some(PublicKey {
+            ed25519_key: self.ed25519_key.clone(),
+            pq_key: self.pq_key.as_ref().map(|pk| pk.public_key()),
+        })
     }
 }
 
@@ -789,8 +825,8 @@ impl Transaction {
     /// Calculate transaction hash (excluding signature)
     pub fn calculate_hash(&self) -> Hash {
         let tx_data = format!("{}{}{}{}{}{}",
-            hex::encode(&self.sender.0),
-            hex::encode(&self.receiver.0),
+            hex::encode(&self.sender.ed25519_key),
+            hex::encode(&self.receiver.ed25519_key),
             self.amount,
             self.fee,
             self.nonce,
@@ -835,16 +871,18 @@ impl Transaction {
     
     /// Verify transaction signature (supports both Ed25519 and PQ)
     pub fn verify(&self) -> Result<bool, Box<dyn std::error::Error>> {
-        let signature = match &self.signature {
+        let signature_data = match &self.signature {
             Some(sig) => sig,
             None => return Ok(false), // Unsigned transaction
         };
+
+        let signature = signature_data;
 
         let message = self.calculate_hash();
 
         // Verify Ed25519 signature (always present)
         let verifying_key = VerifyingKey::from_bytes(
-            self.sender.ed25519_key.as_slice().try_into()
+            signature_data.ed25519_sig.as_slice().try_into()
                 .map_err(|_| "Invalid Ed25519 public key length")?
         )?;
 
@@ -856,10 +894,14 @@ impl Transaction {
         let ed25519_valid = verifying_key.verify(message.as_bytes(), &ed25519_sig).is_ok();
 
         // Verify PQ signature if present
-        let pq_valid = if let (Some(pq_sig), Some(pq_key)) = (&signature.pq_sig, self.sender.pq_key()) {
-            PQCrypto::verify(message.as_bytes(), pq_sig, pq_key)?
+        let pq_valid = if let Some(pq_key) = self.sender.pq_key() {
+            if let Some(ref pq_sig) = signature.pq_sig {
+                PQCrypto::verify(message.as_bytes(), pq_sig, pq_key)?
+            } else {
+                true // No PQ signature required
+            }
         } else {
-            true // No PQ signature required
+            true // No PQ key required
         };
 
         // Both signatures must be valid if PQ is present
@@ -868,7 +910,8 @@ impl Transaction {
     
     /// Generate a new keypair (Ed25519 only for backward compatibility)
     pub fn generate_keypair() -> (PublicKey, PrivateKey) {
-        let signing_key = SigningKey::generate(&mut OsRng);
+        let random_bytes: [u8; 32] = rand::random();
+        let signing_key = SigningKey::from_bytes(&random_bytes);
         let verifying_key = signing_key.verifying_key();
 
         (
@@ -879,11 +922,12 @@ impl Transaction {
 
     /// Generate a new keypair with PQ cryptography
     pub fn generate_keypair_with_pq() -> Result<(PublicKey, PrivateKey), Box<dyn std::error::Error>> {
-        let signing_key = SigningKey::generate(&mut OsRng);
+        let random_bytes: [u8; 32] = rand::random();
+        let signing_key = SigningKey::from_bytes(&random_bytes);
         let verifying_key = signing_key.verifying_key();
 
         // Generate PQ keypair
-        let pq_keypair = PQCrypto::generate_signing_keypair()?;
+        let pq_keypair = PQCrypto::generate_keypair();
 
         let public_key = PublicKey::from_bytes_with_pq(
             verifying_key.to_bytes().to_vec(),
@@ -906,15 +950,6 @@ pub struct Block {
     pub transactions: Vec<Transaction>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct BlockHeader {
-    pub previous_hash: Hash,
-    pub height: u64,
-    pub timestamp: u64,
-    pub merkle_root: Hash,
-    pub validator: PublicKey,
-    pub signature: Option<Signature>,
-}
 
 impl Block {
     pub fn new(previous_hash: Hash, height: u64, transactions: Vec<Transaction>, validator: PublicKey) -> Self {
@@ -924,15 +959,19 @@ impl Block {
             .as_secs();
 
         // Simple merkle root calculation
-        let merkle_root = Self::calculate_simple_merkle(&transactions);
+        let transactions_root = Self::calculate_simple_merkle(&transactions);
 
         let header = BlockHeader {
             previous_hash,
-            height,
-            timestamp,
-            merkle_root,
+            height: BlockHeight(height),
+            timestamp: Timestamp(timestamp),
+            transactions_root,
+            state_root: Hash::new(b"state_root"), // Mock state root
             validator,
             signature: None,
+            gas_used: Gas(21000), // Standard gas used
+            gas_limit: Gas(8000000), // Standard gas limit
+            transaction_count: transactions.len() as u64,
         };
 
         Self {
@@ -941,7 +980,7 @@ impl Block {
         }
     }
 
-    fn calculate_simple_merkle(transactions: &[Transaction]) -> Hash {
+    pub fn calculate_simple_merkle(transactions: &[Transaction]) -> Hash {
         if transactions.is_empty() {
             return Hash::new(b"empty");
         }
@@ -959,7 +998,7 @@ impl Block {
             self.header.previous_hash.as_bytes().iter().take(4).map(|b| format!("{:02x}", b)).collect::<String>(),
             self.header.height,
             self.header.timestamp,
-            self.header.merkle_root.as_bytes().iter().take(4).map(|b| format!("{:02x}", b)).collect::<String>(),
+            self.header.transactions_root.as_bytes().iter().take(4).map(|b| format!("{:02x}", b)).collect::<String>(),
             self.header.validator.as_str()
         );
 
@@ -991,16 +1030,19 @@ impl Block {
             Signature::from_bytes(ed25519_signature.to_bytes().to_vec())
         };
 
-        self.header.signature = Some(signature);
+        self.header.signature = Some(bincode::serialize(&signature)?);
         Ok(())
     }
     
     /// Verify block signature (supports both Ed25519 and PQ)
     pub fn verify(&self) -> Result<bool, Box<dyn std::error::Error>> {
-        let signature = match &self.header.signature {
+        let signature_data = match &self.header.signature {
             Some(sig) => sig,
             None => return Ok(false),
         };
+
+        let signature_bytes = signature_data;
+        let signature: Signature = bincode::deserialize(signature_bytes)?;
 
         let block_hash = self.hash();
 
@@ -1018,10 +1060,14 @@ impl Block {
         let ed25519_valid = verifying_key.verify(block_hash.as_bytes(), &ed25519_sig).is_ok();
 
         // Verify PQ signature if present
-        let pq_valid = if let (Some(pq_sig), Some(pq_key)) = (&signature.pq_sig, self.header.validator.pq_key()) {
-            PQCrypto::verify(block_hash.as_bytes(), pq_sig, pq_key)?
+        let pq_valid = if let Some(pq_key) = self.header.validator.pq_key() {
+            if let Some(ref pq_sig) = signature.pq_sig {
+                PQCrypto::verify(block_hash.as_bytes(), pq_sig, pq_key)?
+            } else {
+                true // No PQ signature required
+            }
         } else {
-            true // No PQ signature required
+            true // No PQ key required
         };
 
         // Both signatures must be valid if PQ is present
@@ -1030,11 +1076,17 @@ impl Block {
 }
 
 /// Current state of the blockchain
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct State {
     pub accounts: std::collections::HashMap<PublicKey, u64>,
     pub last_block_hash: Hash,
-    pub height: u64,
+    pub height: BlockHeight,
+}
+
+impl Default for State {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl State {
@@ -1042,7 +1094,7 @@ impl State {
         Self {
             accounts: std::collections::HashMap::new(),
             last_block_hash: Hash::new(b"genesis"),
-            height: 0,
+            height: BlockHeight(0),
         }
     }
 
@@ -1334,7 +1386,7 @@ mod tests {
 
         // Initially empty
         assert_eq!(state.accounts.len(), 0);
-        assert_eq!(state.height, 0);
+        assert_eq!(state.height.as_u64(), 0);
 
         // Add transaction
         let sender = PublicKey::new("alice".to_string());
@@ -1353,7 +1405,7 @@ mod tests {
 
         state.apply_block(&block).unwrap();
 
-        assert_eq!(state.height, 1);
+        assert_eq!(state.height.as_u64(), 1);
         assert_eq!(state.last_block_hash, block.hash());
     }
 

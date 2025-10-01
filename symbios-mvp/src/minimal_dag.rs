@@ -3,7 +3,7 @@
 //! This module provides a simplified DAG-based mempool focused on
 //! transaction storage, dependency checking, and ordering queue.
 
-use std::collections::{HashMap, HashSet, BinaryHeap};
+use std::collections::{HashMap, HashSet, BinaryHeap, VecDeque};
 use serde::{Serialize, Deserialize};
 use crate::types::{Transaction, Hash, PublicKey};
 
@@ -66,7 +66,7 @@ impl MinimalDagMempool {
 
         // Create DAG vertex
         let vertex = DagVertex {
-            tx_hash: tx.id,
+            tx_hash: tx.id.clone(),
             dependencies: self.find_dependencies(&tx),
             dependents: Vec::new(),
             timestamp: tx.timestamp,
@@ -74,18 +74,19 @@ impl MinimalDagMempool {
         };
 
         // Store transaction and vertex
-        self.transaction_storage.insert(tx.id, tx.clone());
-        self.vertices.insert(tx.id, vertex);
+        let tx_hash = tx.id.clone();
+        self.transaction_storage.insert(tx_hash, tx.clone());
+        self.vertices.insert(tx_hash, vertex);
 
         // Add to priority queue
         self.pending_transactions.push(TransactionPriority {
-            tx_hash: tx.id,
+            tx_hash: tx_hash,
             priority,
             timestamp: tx.timestamp,
         });
 
         // Update dependent relationships
-        self.update_dependencies(&tx.id);
+        self.update_dependencies(&tx_hash);
 
         // Trim mempool if too large
         self.trim_mempool();
@@ -141,8 +142,9 @@ impl MinimalDagMempool {
     fn update_dependencies(&mut self, new_tx_hash: &Hash) {
         // Update dependents of dependencies
         if let Some(new_vertex) = self.vertices.get(new_tx_hash) {
-            for dep_hash in &new_vertex.dependencies {
-                if let Some(dep_vertex) = self.vertices.get_mut(dep_hash) {
+            let dep_hashes: Vec<Hash> = new_vertex.dependencies.clone();
+            for dep_hash in dep_hashes {
+                if let Some(dep_vertex) = self.vertices.get_mut(&dep_hash) {
                     if !dep_vertex.dependents.contains(new_tx_hash) {
                         dep_vertex.dependents.push(*new_tx_hash);
                     }
@@ -367,8 +369,9 @@ impl MinimalGossip {
 
     /// Broadcast transaction to network
     pub fn broadcast_transaction(&mut self, tx: Transaction) {
-        if !self.known_transactions.contains(&tx.id) {
-            self.known_transactions.insert(tx.id);
+        let tx_id = tx.id.clone();
+        if !self.known_transactions.contains(&tx_id) {
+            self.known_transactions.insert(tx_id);
             self.message_queue.push_back(NetworkMessage::Transaction(tx));
         }
     }
@@ -380,8 +383,9 @@ impl MinimalGossip {
 
     /// Receive transaction from network
     pub fn receive_transaction(&mut self, tx: Transaction) {
-        if !self.known_transactions.contains(&tx.id) {
-            self.known_transactions.insert(tx.id);
+        let tx_id = tx.id.clone();
+        if !self.known_transactions.contains(&tx_id) {
+            self.known_transactions.insert(tx_id);
             // In real implementation, this would trigger further gossip
         }
     }

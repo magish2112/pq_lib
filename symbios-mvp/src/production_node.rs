@@ -74,15 +74,15 @@ impl ProductionNode {
         let storage = Arc::new(MinimalStorage::new(storage_path, config.max_storage_mb)?);
 
         // Create node keys (in production, load from secure storage)
-        let node_id = PublicKey(format!("validator_{}", config.node_id).into_bytes());
-        let private_key = PrivateKey(format!("private_key_{}", config.node_id).into_bytes());
+        let node_id = PublicKey::new(format!("validator_{}", config.node_id));
+        let private_key = PrivateKey::new(format!("private_key_{}", config.node_id));
 
         // Create validator set (in production, load from network)
         let validators = vec![
-            PublicKey("validator_validator-1".to_string().into_bytes()),
-            PublicKey("validator_validator-2".to_string().into_bytes()),
-            PublicKey("validator_validator-3".to_string().into_bytes()),
-            PublicKey("validator_validator-4".to_string().into_bytes()),
+            PublicKey::new("validator_validator-1".to_string()),
+            PublicKey::new("validator_validator-2".to_string()),
+            PublicKey::new("validator_validator-3".to_string()),
+            PublicKey::new("validator_validator-4".to_string()),
         ];
 
         // Initialize consensus
@@ -255,7 +255,7 @@ impl ProductionNode {
         }
 
         let state = self.storage.get_state().await?;
-        let height = state.height + 1;
+        let height = state.height.as_u64() + 1;
 
         // Create block
         let mut block = Block::new(
@@ -317,7 +317,7 @@ impl ProductionNode {
 
         // Log current stats
         let stats = self.stats.read().await;
-        log::info!("Maintenance completed - Blocks: {}, TXs: {}, TPS: {:.1f}",
+        log::info!("Maintenance completed - Blocks: {}, TXs: {}, TPS: {}",
             stats.blocks_processed, stats.transactions_processed, stats.tps_average);
     }
 

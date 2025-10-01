@@ -164,7 +164,7 @@ impl LightweightConsensus {
         }
 
         // Store proposal
-        self.state.proposals.insert(round, block);
+        self.state.proposals.insert(round, block.clone());
 
         // Vote for the proposal if we're not the proposer
         if !self.is_leader() {
@@ -281,7 +281,7 @@ impl crate::consensus::ConsensusTrait for LightweightConsensus {
 
         // Get current state
         let state = storage.get_state().await?;
-        let height = state.height + 1;
+        let height = state.height.as_u64() + 1;
 
         // Create block
         let mut block = Block::new(
@@ -303,7 +303,7 @@ impl crate::consensus::ConsensusTrait for LightweightConsensus {
 
     async fn validate_block(&self, block: &Block, state: &crate::types::State) -> Result<bool, Box<dyn std::error::Error>> {
         // Basic validation
-        if block.header.height != state.height + 1 {
+        if block.header.height.as_u64() != state.height.as_u64() + 1 {
             return Ok(false);
         }
 
@@ -328,7 +328,7 @@ impl crate::consensus::ConsensusTrait for LightweightConsensus {
         self.state.committed_blocks.insert(round, block.hash());
         self.state.last_committed_round = round;
 
-        log::info!("Block {} finalized at height {}", block.hash().as_bytes().iter().take(4).map(|b| format!("{:02x}", b)).collect::<String>(), block.header.height);
+        log::info!("Block {} finalized at height {}", block.hash().as_bytes().iter().take(4).map(|b| format!("{:02x}", b)).collect::<String>(), block.header.height.as_u64());
 
         Ok(())
     }

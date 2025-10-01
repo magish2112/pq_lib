@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use async_trait::async_trait;
+use serde::{Serialize, Deserialize};
 use crate::types::{Block, Transaction, Hash, State, PublicKey, PrivateKey};
 use crate::mempool::MempoolTrait;
 use crate::storage::StorageTrait;
@@ -62,7 +63,7 @@ impl ConsensusTrait for SimpleConsensus {
         // Get current state to determine block height
         let state = storage.get_state().await?;
         let previous_hash = state.last_block_hash;
-        let height = state.height + 1;
+        let height = state.height.as_u64() + 1;
 
         // Create new block
         let mut block = Block::new(previous_hash, height, transactions, self.validator_id.clone());
@@ -80,8 +81,8 @@ impl ConsensusTrait for SimpleConsensus {
         // Basic validation checks
 
         // 1. Check block height
-        if block.header.height != state.height + 1 {
-            log::warn!("Invalid block height: expected {}, got {}", state.height + 1, block.header.height);
+        if block.header.height.as_u64() != state.height.as_u64() + 1 {
+            log::warn!("Invalid block height: expected {}, got {}", state.height.as_u64() + 1, block.header.height.as_u64());
             return Ok(false);
         }
 
@@ -104,8 +105,8 @@ impl ConsensusTrait for SimpleConsensus {
         }
 
         // 5. Verify Merkle root
-        let calculated_merkle_root = Block::calculate_merkle_root(&block.transactions);
-        if calculated_merkle_root != block.header.merkle_root {
+        let calculated_merkle_root = Block::calculate_simple_merkle(&block.transactions);
+        if calculated_merkle_root != block.header.transactions_root {
             log::warn!("Invalid Merkle root");
             return Ok(false);
         }
@@ -146,7 +147,7 @@ impl ConsensusFactory {
 }
 
 /// Vote structure for consensus messages
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Vote {
     pub block_hash: Hash,
     pub validator: PublicKey,
@@ -154,7 +155,7 @@ pub struct Vote {
     pub vote_type: VoteType,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum VoteType {
     Prepare,
     PreCommit,
@@ -162,7 +163,7 @@ pub enum VoteType {
 }
 
 /// Consensus messages for communication between validators
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ConsensusMessage {
     Proposal(Block),
     Vote(Vote),

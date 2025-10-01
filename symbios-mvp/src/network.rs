@@ -225,21 +225,21 @@ pub struct Network {
 /// Combined network behaviour with all protocols
 #[derive(libp2p::NetworkBehaviour)]
 pub struct NetworkBehaviour {
-    pub gossipsub: Gossipsub,
-    pub kademlia: Kademlia<MemoryStore>,
-    pub identify: Identify,
-    pub request_response: RequestResponse<NetworkCodec>,
+    pub gossipsub: libp2p::gossipsub::Gossipsub,
+    pub kademlia: libp2p::kad::Kademlia<libp2p::kad::store::MemoryStore>,
+    pub identify: libp2p::identify::Identify,
+    pub request_response: libp2p::request_response::RequestResponse<NetworkCodec>,
 }
 
 #[derive(Clone)]
 pub struct NetworkCodec;
 
 impl request_response::Codec for NetworkCodec {
-    type Protocol = std::convert::Infallible;
+    type Protocol = &'static str;
     type Request = NetworkRequest;
     type Response = NetworkResponse;
 
-    fn read_request<T>(&mut self, _: &libp2p::request_response::CodecRequest, io: &mut T) -> std::io::Result<Self::Request>
+    fn read_request<T>(&mut self, protocol: &Self::Protocol, io: &mut T) -> std::io::Result<Self::Request>
     where
         T: std::io::Read,
     {
@@ -248,7 +248,7 @@ impl request_response::Codec for NetworkCodec {
         serde_json::from_slice(&vec).map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))
     }
 
-    fn read_response<T>(&mut self, _: &libp2p::request_response::CodecResponse, io: &mut T) -> std::io::Result<Self::Response>
+    fn read_response<T>(&mut self, protocol: &Self::Protocol, io: &mut T) -> std::io::Result<Self::Response>
     where
         T: std::io::Read,
     {
@@ -257,19 +257,21 @@ impl request_response::Codec for NetworkCodec {
         serde_json::from_slice(&vec).map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))
     }
 
-    fn write_request<T>(&mut self, _: &Self::Request, io: &mut T) -> std::io::Result<()>
+    fn write_request<T>(&mut self, protocol: &Self::Protocol, io: &mut T, request: Self::Request) -> std::io::Result<()>
     where
         T: std::io::Write,
     {
-        // This is handled by the request_response behaviour
+        let data = serde_json::to_vec(&request).map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
+        io.write_all(&data)?;
         Ok(())
     }
 
-    fn write_response<T>(&mut self, _: &Self::Response, io: &mut T) -> std::io::Result<()>
+    fn write_response<T>(&mut self, protocol: &Self::Protocol, io: &mut T, response: Self::Response) -> std::io::Result<()>
     where
         T: std::io::Write,
     {
-        // This is handled by the request_response behaviour
+        let data = serde_json::to_vec(&response).map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
+        io.write_all(&data)?;
         Ok(())
     }
 }
@@ -1107,7 +1109,7 @@ mod tests {
         assert!(state_response.is_ok());
         match state_response.unwrap() {
             NetworkResponse::State(state) => {
-                assert_eq!(state.height, 0); // Initial state
+                assert_eq!(state.height.as_u64(), 0); // Initial state
             }
             _ => panic!("Expected State response"),
         }

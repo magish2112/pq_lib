@@ -85,6 +85,6 @@ try {
     }
 } catch {
     Write-Host ""
-    Write-Host "🛑 Demo stopped" -ForegroundColor Red
+    Write-Host "Demo stopped" -ForegroundColor Red
 }
 

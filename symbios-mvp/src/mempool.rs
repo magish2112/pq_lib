@@ -1,7 +1,7 @@
 use std::collections::{HashSet, VecDeque};
 use async_trait::async_trait;
 use crate::types::{Transaction, Hash};
-use crate::storage::Storage;
+use crate::storage::{Storage, StorageTrait};
 
 /// Mempool trait for transaction management
 #[async_trait]
@@ -76,8 +76,20 @@ impl MempoolTrait for Mempool {
         // Validate transaction
         self.validate_transaction(&tx)?;
 
-        // Store transaction persistently
-        self.storage.store_transaction(&tx).await?;
+        // Create a basic receipt for the transaction
+        let receipt = crate::state_machine::TransactionReceipt {
+            tx_hash: tx.id.clone(),
+            block_hash: Hash::new(b"pending"),
+            block_height: 0,
+            gas_used: 21000,
+            gas_price: tx.fee,
+            status: crate::state_machine::ExecutionStatus::Success,
+            logs: vec![],
+            contract_address: None,
+        };
+
+        // Store transaction receipt persistently
+        self.storage.store_transaction_receipt(&receipt).await?;
 
         // Evict old transactions if needed
         self.evict_if_needed();

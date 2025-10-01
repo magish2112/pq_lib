@@ -289,7 +289,7 @@ impl SimpleNode {
         log::info!("     Mempool Blocks: {}", dag_stats.total_mempool_blocks);
         log::info!("     Certificates: {}", dag_stats.total_certificates);
         log::info!("     Current Round: {}", self.dag_mempool.current_round);
-        log::info!("     Average Batch Size: {:.1f}", dag_stats.average_batch_size);
+        log::info!("     Average Batch Size: {}", dag_stats.average_batch_size);
 
         // Phase 5: Demonstrate sanctions system
         log::info!("\n🛡️  Phase 5: BFT Sanctions System Demonstration");
@@ -334,7 +334,7 @@ impl SimpleNode {
         log::info!("     Total Mempool Blocks: {}", final_stats.total_mempool_blocks);
         log::info!("     Total Certificates: {}", final_stats.total_certificates);
         log::info!("     Total Sanctions: {}", final_stats.total_sanctions);
-        log::info!("     Average Batch Size: {:.1f}", final_stats.average_batch_size);
+        log::info!("     Average Batch Size: {}", final_stats.average_batch_size);
 
         log::info!("  🏆 Validator Scores:");
         for validator in &self.validators {

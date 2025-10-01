@@ -18,6 +18,7 @@ enum EntryType {
     Transaction,
     Block,
     State,
+    TransactionReceipt,
 }
 
 /// Storage entry with metadata
@@ -276,7 +277,7 @@ impl crate::storage::StorageTrait for MinimalStorage {
 
     async fn get_transaction(&self, hash: &Hash) -> Result<Option<Transaction>, Box<dyn std::error::Error>> {
         let key = format!("tx_{}", hex::encode(&hash.as_bytes()[..8])).into_bytes();
-        match self.retrieve_entry(&key).await? {
+        match self.retrieve_entry(key.as_slice()).await? {
             Some(entry) => {
                 let tx: Transaction = bincode::deserialize(&entry.data)?;
                 Ok(Some(tx))
@@ -307,7 +308,7 @@ impl crate::storage::StorageTrait for MinimalStorage {
 
     async fn get_block(&self, hash: &Hash) -> Result<Option<Block>, Box<dyn std::error::Error>> {
         let key = format!("block_{}", hex::encode(&hash.as_bytes()[..8])).into_bytes();
-        match self.retrieve_entry(&key).await? {
+        match self.retrieve_entry(key.as_slice()).await? {
             Some(entry) => {
                 let block: Block = bincode::deserialize(&entry.data)?;
                 Ok(Some(block))
@@ -347,12 +348,30 @@ impl crate::storage::StorageTrait for MinimalStorage {
 
     async fn get_state(&self) -> Result<State, Box<dyn std::error::Error>> {
         let key = b"current_state";
-        match self.retrieve_entry(key).await? {
+        match self.retrieve_entry(key.as_slice()).await? {
             Some(entry) => {
                 let state: State = bincode::deserialize(&entry.data)?;
                 Ok(state)
             }
             None => Ok(State::new()),
+        }
+    }
+
+    async fn store_transaction_receipt(&self, receipt: &crate::state_machine::TransactionReceipt) -> Result<(), Box<dyn std::error::Error>> {
+        let key = format!("receipt_{}", hex::encode(&receipt.tx_hash.as_bytes()[..8])).into_bytes();
+        let data = bincode::serialize(receipt)?;
+        let entry = StorageEntry::new(EntryType::TransactionReceipt, key, data);
+        self.store_entry(entry).await
+    }
+
+    async fn get_transaction_receipt(&self, tx_hash: &Hash) -> Result<Option<crate::state_machine::TransactionReceipt>, Box<dyn std::error::Error>> {
+        let key = format!("receipt_{}", hex::encode(&tx_hash.as_bytes()[..8])).into_bytes();
+        match self.retrieve_entry(key.as_slice()).await? {
+            Some(entry) => {
+                let receipt: crate::state_machine::TransactionReceipt = bincode::deserialize(&entry.data)?;
+                Ok(Some(receipt))
+            }
+            None => Ok(None),
         }
     }
 }

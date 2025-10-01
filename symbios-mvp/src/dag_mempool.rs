@@ -57,7 +57,7 @@ pub struct SanctionRecord {
     pub penalty_score: u64,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum ViolationType {
     DoubleSpending,
     InvalidTransaction,
@@ -214,7 +214,7 @@ impl SmartDagMempool {
 
         let mempool_block = MempoolBlock {
             id: block_hash,
-            transactions,
+            transactions: transactions.clone(),
             timestamp,
             worker_id: worker_id.clone(),
             batch_size: transactions.len(),
@@ -297,7 +297,7 @@ impl SmartDagMempool {
         // Add to DAG
         self.vertices.insert(mempool_block_hash, vertex);
 
-        log::info!("Promoted Mempool Block to DAG vertex with confidence {:.2f}",
+        log::info!("Promoted Mempool Block to DAG vertex with confidence {:.2}",
             confidence_score
         );
 
@@ -395,7 +395,7 @@ impl SmartDagMempool {
     }
 
     /// Validate certificate
-    async fn validate_certificate(&self, certificate: &Certificate) -> Result<(), Box<dyn std::error::Error>> {
+    async fn validate_certificate(&mut self, certificate: &Certificate) -> Result<(), Box<dyn std::error::Error>> {
         // Check if validator is authorized
         if !self.validators.contains(&certificate.validator) {
             self.apply_sanction(&certificate.validator, ViolationType::ConsensusViolation, vec![]).await?;
@@ -485,14 +485,6 @@ impl MempoolTrait for SmartDagMempool {
     }
 }
 
-/// Statistics about DAG state
-#[derive(Debug, Clone)]
-pub struct DagStats {
-    pub total_vertices: usize,
-    pub current_round: u64,
-    pub pending_transactions: usize,
-    pub seen_certificates: usize,
-}
 
 /// Certificate generation (would be done by validators)
 pub struct CertificateGenerator;
@@ -508,17 +500,18 @@ impl CertificateGenerator {
         let id = Hash::new(certificate_data.as_bytes());
 
         // Generate deterministic signature for MVP (not cryptographically secure)
-        let signature = format!("cert_sig_{}_{}", 
-            mempool_block_hash.as_bytes().iter().take(4).map(|b| format!("{:02x}", b)).collect::<String>(),
+        let signature = format!("cert_sig_{}_{}",
+            block_hash.as_bytes().iter().take(4).map(|b| format!("{:02x}", b)).collect::<String>(),
             validator.as_str()
         ).into_bytes();
 
         Ok(Certificate {
             id,
-            block_hash,
+            mempool_block_hash: block_hash,
             validator,
             signature,
             round,
+            timestamp: std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs(),
         })
     }
 }

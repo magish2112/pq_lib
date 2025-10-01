@@ -53,8 +53,8 @@ impl ConflictGraph {
         // Check for conflicts with existing transactions
         for (other_hash, other_ctx) in &self.nodes {
             if self.has_conflict(&ctx, other_ctx) {
-                self.edges.entry(tx_hash).or_insert_with(HashSet::new).insert(*other_hash);
-                self.edges.entry(*other_hash).or_insert_with(HashSet::new).insert(tx_hash);
+                self.edges.entry(tx_hash).or_insert_with(HashSet::new).insert(other_hash.clone());
+                self.edges.entry(other_hash.clone()).or_insert_with(HashSet::new).insert(tx_hash.clone());
             }
         }
 
@@ -91,7 +91,7 @@ impl ConflictGraph {
             // Check if this transaction conflicts with batch
             let tx_accounts: HashSet<_> = ctx.read_set.union(&ctx.write_set).collect();
             if used_accounts.is_disjoint(&tx_accounts) {
-                batch.push(*tx_hash);
+                batch.push(tx_hash.clone());
                 used_accounts.extend(tx_accounts);
 
                 if batch.len() >= max_batch_size {
@@ -105,7 +105,7 @@ impl ConflictGraph {
 
     /// Mark transaction as committed
     pub fn commit_transaction(&mut self, tx_hash: &Hash) {
-        self.committed.insert(*tx_hash);
+        self.committed.insert(tx_hash.clone());
         // Remove from conflict edges
         self.edges.remove(tx_hash);
         for edges in self.edges.values_mut() {
@@ -115,7 +115,7 @@ impl ConflictGraph {
 
     /// Mark transaction as aborted
     pub fn abort_transaction(&mut self, tx_hash: &Hash) {
-        self.aborted.insert(*tx_hash);
+        self.aborted.insert(tx_hash.clone());
         self.nodes.remove(tx_hash);
         self.edges.remove(tx_hash);
         for edges in self.edges.values_mut() {

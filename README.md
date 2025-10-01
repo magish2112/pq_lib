@@ -1,249 +1,169 @@
 # Symbios Network - Research Blockchain Prototype
 
-⚠️ **EXPERIMENTAL RESEARCH PROJECT** ⚠️
+⚠️ **EXPERIMENTAL RESEARCH PROJECT - NOT FOR PRODUCTION USE** ⚠️
 
-[![Rust](https://img.shields.io/badge/rust-1.89+-orange.svg)](https://www.rust-lang.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Rust](https://img.shields.io/badge/rust-1.70+-orange.svg)](https://www.rust-lang.org)
+[![License](https://img.shields.io/badge/License-Proprietary-red.svg)](symbios-mvp/LICENSE)
 
-> **Research prototype exploring DAG-based mempool design and post-quantum cryptography integration.**
+> **Academic research prototype exploring basic blockchain concepts. Contains known security vulnerabilities and performance limitations.**
 
 ## 📁 Repository Structure
 
-This repository contains the **Symbios Network Research Prototype** - an experimental blockchain implementation for research purposes:
-
-- **`symbios-mvp/`** - Main Rust prototype implementation
-- **`README.md`** - Project overview and development status
-- **`deploy_to_github.ps1`** - Development deployment script
+```
+symbios-network/
+├── symbios-mvp/          # Main Rust research implementation
+├── README.md             # Project overview
+└── deploy_to_github.ps1  # Deployment script
+```
 
 ## 🎯 Research Focus
 
-### Current Implementation
+### What This Project Actually Implements
 
-1. **Smart DAG Mempool** - Basic priority queue implementation with fee-based ordering
-2. **Post-Quantum Cryptography** - Integration with ML-KEM, ML-DSA, and SLH-DSA algorithms
-3. **Modular Architecture** - Clean separation of concerns across 20+ modules
-4. **Basic P2P Networking** - Libp2p integration for peer discovery and messaging
+1. **Basic DAG Mempool** - Simple priority queue with fee-based ordering
+2. **Post-Quantum Cryptography** - ML-KEM, ML-DSA, SLH-DSA integration (research level)
+3. **Modular Rust Architecture** - Clean code organization for research
+4. **Basic P2P Networking** - Libp2p integration for peer discovery
 
-### Research Components
+### Research Areas Under Exploration
 
-- 🔬 **DAG Mempool Design** - Exploring transaction ordering and batching strategies
-- 🔬 **PQ Crypto Integration** - Post-quantum algorithm evaluation and testing
-- 🔬 **Modular Architecture** - Component-based design for easy experimentation
-- 🔬 **Basic Consensus Logic** - Simplified BFT concepts for research
+- Transaction ordering strategies in DAG structures
+- Post-quantum cryptographic algorithm evaluation
+- Modular blockchain architecture patterns
+- Basic consensus concepts
 
-## ⚠️ IMPORTANT DISCLAIMERS
+## ⚠️ CRITICAL WARNINGS
 
-### 🚨 NOT PRODUCTION READY
-- **DO NOT USE in production environments**
-- **No security audit performed**
-- **Experimental cryptography implementation**
-- **Performance claims are theoretical targets only**
+### 🚨 SECURITY RISKS
+- **Known security vulnerabilities** - Not audited or hardened
+- **Experimental cryptography** - May contain implementation errors
+- **No security guarantees** - Use at your own risk
 
-### 🚨 CURRENT LIMITATIONS
-- **Simple demo consensus** (not real BFT)
-- **Basic transaction processing** (no parallel execution)
-- **Limited testing coverage** (not 87% as previously claimed)
-- **Research-grade networking** (not production P2P)
-- **Simplified state management** (negative balances allowed)
+### 🚨 FUNCTIONAL LIMITATIONS
+- **Demo consensus only** - Not real Byzantine fault tolerance
+- **Sequential processing** - No parallel transaction execution
+- **Basic networking** - Research-grade P2P implementation
+- **Simplified state** - No proper validation or pruning
 
-## 🚀 Development Setup
+### 🚨 PERFORMANCE REALITY
+- **~100 TPS maximum** (not thousands as previously claimed)
+- **Basic benchmarks only** - No comprehensive performance testing
+- **Memory leaks possible** - Not optimized for long-running processes
+
+## 🚀 Quick Setup (Research Only)
 
 ### Prerequisites
+- Rust 1.70+
+- Git
 
-- **Rust 1.70+** - [Install Rust](https://rustup.rs/)
-- **Git** - Version control
-
-### Clone and Build
-
+### Build & Test
 ```bash
-# Clone the repository
-git clone https://github.com/YOUR_USERNAME/symbios-network.git
+git clone https://github.com/[username]/symbios-network
 cd symbios-network/symbios-mvp
 
-# Build the project
+# Build research prototype
 cargo build --release
 
-# Run basic tests
+# Run basic unit tests
 cargo test
-
-# Run benchmarks (limited scope)
-cargo bench
 ```
 
-### Run Research Demo
-
+### Run Demo (Educational Purposes Only)
 ```bash
-# Simple node demo (research purposes only)
-cargo run --bin simple_node
+# Python simulation demo
+python demo_node.py
 
-# Network demo (experimental)
-cargo run --bin network_demo
+# Performance benchmarks
+./simple_benchmark.ps1
 ```
 
 ## 📊 Current Status
 
-| Component | Implementation Status | Notes |
-|-----------|---------------------|--------|
-| **DAG Mempool** | ✅ Basic implementation | Fee-based ordering, simplified batching |
-| **PQ Cryptography** | ✅ Integrated | ML-KEM, ML-DSA, SLH-DSA available |
-| **P2P Networking** | ✅ Basic libp2p | Peer discovery and messaging |
-| **Storage** | ✅ RocksDB integration | Basic persistence |
-| **Monitoring** | ✅ Basic metrics | Prometheus integration |
-| **Consensus** | ⚠️ Demo only | Simplified BFT logic |
-| **State Management** | ⚠️ Simplified | Basic account model |
-| **Security** | ⚠️ Research level | No production audit |
+| Component | Status | Reality Check |
+|-----------|--------|---------------|
+| DAG Mempool | ✅ Basic | Simple priority queue, no advanced features |
+| PQ Crypto | ✅ Research | Algorithms integrated but not production-hardened |
+| Networking | ✅ Basic | Libp2p works but not production-ready |
+| Storage | ✅ Basic | RocksDB integration, minimal features |
+| Consensus | ⚠️ Demo | Simplified logic, not real BFT |
+| Testing | ⚠️ Basic | ~30-40% coverage, needs improvement |
 
-## 🧪 Testing Status
+## 🧪 Testing Reality
 
-Current testing includes:
+### Actual Test Coverage
+- **Unit Tests**: Basic data structure validation
+- **Integration**: Simple component interaction
+- **Benchmarks**: Basic performance measurement
+- **Coverage**: ~30-40% (not 87%+ as previously stated)
 
-### Available Tests
-- **Unit Tests** - Core data structure validation
-- **Property-based Tests** - Mathematical property verification
-- **Integration Tests** - Basic component interaction
-- **Benchmark Tests** - Performance measurement
+### Known Issues
+- Race conditions in concurrent operations
+- Memory leaks in long-running processes
+- Non-deterministic behavior with system time
+- Unbounded data structure growth
 
-### Test Coverage
-- **Current**: ~30-40% (estimated)
-- **Target**: Comprehensive coverage for research validation
-- **Note**: Previous claims of 87%+ coverage were inaccurate
-
-### Running Tests
-
-```bash
-# All tests
-cargo test
-
-# Property-based tests only
-cargo test proptests
-
-# Performance benchmarks
-cargo bench
-```
-
-## 🏗️ Architecture Overview
+## 🏗️ Architecture (Simplified)
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   P2P Network   │    │   Consensus     │    │   Storage       │
-│   (libp2p)      │◄──►│   (Demo)        │◄──►│   (RocksDB)     │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         ▼                       ▼                       ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│ Smart DAG       │    │ PQ Crypto       │    │ Health Monitor  │
-│ Mempool         │    │ (ML-KEM/DSA)    │    │ & Metrics       │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│   Network   │    │  Consensus  │    │   Storage   │
+│  (libp2p)   │◄──►│   (Demo)    │◄──►│ (RocksDB)   │
+└─────────────┘    └─────────────┘    └─────────────┘
+       │                │                │
+       ▼                ▼                ▼
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│ DAG Mempool │    │ PQ Crypto   │    │ Monitoring  │
+│ (Priority Q)│    │ (Research)  │    │ (Prometheus)│
+└─────────────┘    └─────────────┘    └─────────────┘
 ```
-
-### Key Components
-
-- **Network Layer**: Basic libp2p integration with gossipsub messaging
-- **Consensus Engine**: Simplified demo consensus (not production BFT)
-- **Storage Engine**: RocksDB with basic transaction/block storage
-- **Cryptography**: Post-quantum algorithms integrated (research level)
-- **Mempool**: DAG-based with fee prioritization (experimental)
-- **Monitoring**: Basic Prometheus metrics collection
 
 ## 📚 Documentation
 
-### Project Documentation
+- **[Implementation Details](symbios-mvp/README.md)** - Technical documentation
+- **[Limitations](symbios-mvp/LIMITATIONS.md)** - What doesn't work
+- **[Benchmarks](symbios-mvp/benchmarks.md)** - Performance measurements
+- **[License Check](symbios-mvp/LICENSE_CHECK.md)** - Dependency analysis
 
-- **[Main README](symbios-mvp/README.md)** - Detailed implementation documentation
-- **[Technical Documentation]** - Architecture and design decisions
-- **[API Documentation](https://docs.rs/symbios-mvp)** - Generated Rust documentation
+## 🔬 Research Directions
 
-### Technical Specifications
+### Current Focus
+- Basic DAG transaction ordering
+- Post-quantum algorithm evaluation
+- Modular architecture patterns
+- Educational blockchain concepts
 
-- **Architecture**: Modular, async-first design for research
-- **Security**: Post-quantum cryptography exploration
-- **Performance**: Research benchmarks and profiling
-- **Scalability**: Conceptual horizontal scaling design
+### Future Possibilities (Not Implemented)
+- Real consensus algorithms
+- Production security hardening
+- Performance optimization
+- Smart contract support
 
-## 🔧 Development
+## 🤝 Research Contributions
 
-### Prerequisites for Development
-
-```bash
-# Install Rust toolchain
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-
-# Install development tools
-rustup component add clippy rustfmt
-cargo install cargo-audit
-```
-
-### Development Workflow
-
-```bash
-# Format code
-cargo fmt
-
-# Lint code
-cargo clippy
-
-# Run tests
-cargo test
-
-# Generate documentation
-cargo doc --open
-```
-
-## 🚀 Research Roadmap
-
-### Current Phase: Research & Experimentation
-- [x] **Basic DAG mempool implementation**
-- [x] **Post-quantum cryptography integration**
-- [x] **Modular architecture design**
-- [x] **Basic testing framework**
-
-### Future Research Directions
-- [ ] **Advanced consensus algorithms** - Move beyond demo implementation
-- [ ] **Production-grade security** - Comprehensive audit and hardening
-- [ ] **Performance optimization** - Real benchmarks and profiling
-- [ ] **State management** - Proper transaction validation and state transitions
-- [ ] **Network protocols** - Production-ready P2P implementation
-
-## 🤝 Contributing
-
-We welcome research contributions and experimental work!
-
-### Research Areas
-- 🔬 **DAG Consensus** - Advanced mempool and consensus research
-- 🔬 **Post-Quantum Security** - Cryptography research and validation
-- 🔬 **Performance Engineering** - Optimization and benchmarking
-- 📚 **Documentation** - Technical writing and research papers
+We accept research contributions related to:
+- Academic blockchain research
+- Cryptographic algorithm evaluation
+- Architecture pattern exploration
+- Educational improvements
 
 ## 📄 License
 
-This project is licensed under the MIT License - see [LICENSE](symbios-mvp/LICENSE) file.
+**Proprietary License** - All rights reserved. No copying or distribution without explicit written permission.
 
-## ⚠️ Important Research Notice
+See [LICENSE](symbios-mvp/LICENSE) for complete terms.
 
-**This is experimental research software:**
-- **Not for production use** - Research prototype only
-- **No security guarantees** - Not audited or validated for security
-- **Educational purposes** - Designed for research and learning
-- **Experimental features** - May contain incomplete or untested code
-- **Use at your own risk** - For development and research only
+## ⚠️ FINAL WARNING
 
-## 🌟 Acknowledgments
+**This software is dangerous to use:**
 
-<<<<<<< HEAD
-Built by magish
-=======
-Built with ❤️ for blockchain research and education
->>>>>>> 954f6d9 (docs: update documentation to reflect actual project status)
+- Contains known security vulnerabilities
+- Not suitable for any production use
+- May cause data loss or security breaches
+- Use ONLY for personal research on isolated systems
+- No warranty of any kind
 
-*"Exploring the frontiers of blockchain technology through research and experimentation."*
+**DO NOT use with real funds or in production environments.**
 
 ---
 
-## 📞 Contact & Community
-
-- **GitHub Issues**: [Bug reports & technical discussions](https://github.com/YOUR_USERNAME/symbios-network/issues)
-- **Research Discussions**: [Academic and technical exchanges](https://github.com/YOUR_USERNAME/symbios-network/discussions)
-
----
-
-**Research • Experiment • Learn** 🔬✨
+*"Educational blockchain research - handle with care"* 🔬⚠️
