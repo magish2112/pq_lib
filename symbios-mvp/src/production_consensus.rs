@@ -513,7 +513,7 @@ impl<S: StorageTrait + Send + Sync + 'static, N: NetworkTrait + Send + Sync + 's
         }
 
         // Validate nonce and balance using state machine
-        let current_state = self.state_machine.get_height().unwrap_or(0);
+        let current_state = self.state_machine.get_height().map_err(|_| 0)?;
         if block_height != current_state + 1 {
             return Ok(false);
         }
@@ -686,23 +686,45 @@ impl<S: StorageTrait + Send + Sync + 'static, N: NetworkTrait + Send + Sync + 's
         let current_view = self.current_view.load(Ordering::Relaxed);
         let validator_set = self.validator_set.read().map_err(|_| BlockchainError::LockPoisoned)?;
 
+        // Get current leader
+        let leader_index = (current_view % validator_set.validators.len() as u64) as usize;
+        let leader = validator_set.validators.keys().nth(leader_index);
+
         // Check for timeout since last block
-        // For determinism, use simplified timeout logic
-        // In production, this could be based on block height differences
-        let time_since_last_block = 0; // Deterministic for testing
+        let last_block_height = self.state_machine.get_height().map_err(|_| 0)?;
+        let expected_height = current_view + 1; // View should correspond to block height
+
+        let height_difference = expected_height.saturating_sub(last_block_height);
 
         // Initiate view change if:
-        // 1. No block for more than view timeout
-        // 2. Leader is suspected of equivocation
-        // 3. Network partition detected
+        // 1. Block height is significantly behind view number (leader not producing blocks)
+        // 2. Leader is suspected of equivocation (conflicting messages)
+        // 3. No progress for extended period
 
-        let should_change = time_since_last_block > self.config.view_timeout_ms / 1000;
+        let should_change = height_difference > 3; // Allow some tolerance
 
-        // Additional check: if we received conflicting PrePrepare messages from leader
+        // Check for equivocation: if we have conflicting PrePrepare messages
         let pre_prepare_messages = self.pre_prepare_messages.read().map_err(|_| BlockchainError::LockPoisoned)?;
         let conflicting_messages = pre_prepare_messages.len() > 1;
 
-        Ok(should_change || conflicting_messages)
+        // Check if leader sent multiple different blocks in this view
+        let leader_equivocation = if let Some(leader_key) = leader {
+            let mut leader_blocks = HashSet::new();
+            for (block_hash, messages) in pre_prepare_messages.iter() {
+                for msg in messages {
+                    if let ConsensusMessage::PrePrepare { proposer, .. } = msg {
+                        if proposer == leader_key {
+                            leader_blocks.insert(*block_hash);
+                        }
+                    }
+                }
+            }
+            leader_blocks.len() > 1 // Leader sent multiple different blocks
+        } else {
+            false
+        };
+
+        Ok(should_change || conflicting_messages || leader_equivocation)
     }
 
     /// Broadcast message to network

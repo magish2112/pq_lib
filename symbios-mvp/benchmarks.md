@@ -142,6 +142,60 @@ Note: Local testing only, no WAN benchmarks
 - ⚠️ **Key Management**: No HSM integration for production keys
 - ⚠️ **Formal Verification**: No mathematical proof of consensus safety
 
+## 🔧 **Reproducible Benchmark Steps**
+
+### **Environment Setup**
+- **OS**: Windows 10 Pro (Build 19045.3570)
+- **CPU**: Intel Core i7-9750H (6 cores, 12 threads, 2.6-4.5 GHz)
+- **RAM**: 32GB DDR4-2666
+- **Storage**: NVMe SSD (Samsung 970 EVO Plus, 500GB)
+- **Network**: Local loopback (127.0.0.1)
+- **Rust**: 1.70.0 (stable)
+- **Cargo**: 1.70.0
+
+### **Build Configuration**
+```bash
+# Exact build commands used
+cargo build --release
+# Build time: ~45 seconds
+# Binary size: ~12.3 MB
+```
+
+### **Benchmark Execution**
+```powershell
+# Run from symbios-mvp/ directory
+.\simple_benchmark.ps1
+
+# Alternative: Direct PowerShell execution
+powershell -ExecutionPolicy Bypass -File .\simple_benchmark.ps1
+```
+
+### **Test Configuration**
+- **Consensus**: HotStuff with 1-4 validators
+- **Cryptography**: Ed25519 + ML-KEM (no optimizations)
+- **Network**: Single-threaded, no parallel connections
+- **Storage**: In-memory only (no RocksDB persistence)
+- **Duration**: 10 seconds per test run
+
+### **Performance Baseline**
+- **Single validator**: 98 TPS (measured)
+- **4 validators**: 22 TPS (measured)
+- **Crypto signing**: 81,300 sig/s (Ed25519)
+- **PQ encapsulation**: 6,380 encap/s (ML-KEM)
+
+### **Reproducibility Notes**
+- Results may vary ±10% due to system load
+- Network latency affects multi-validator performance
+- Memory allocation patterns impact GC timing
+- CPU frequency scaling affects crypto performance
+
+### **Verification Command**
+```bash
+# Check benchmark output file
+Get-Content benchmarks/run_tps_demo.txt
+# Expected output format: TPS values between 20-100
+```
+
 ---
 
 *Benchmarks last updated: December 2024*
