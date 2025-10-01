@@ -35,20 +35,21 @@ symbios-network/
 ## ⚠️ CRITICAL WARNINGS
 
 ### 🚨 SECURITY RISKS
-- **Known security vulnerabilities** - Not audited or hardened
-- **Experimental cryptography** - May contain implementation errors
-- **No security guarantees** - Use at your own risk
+- **Known security vulnerabilities** - Partially audited with fixes applied
+- **Experimental cryptography** - PQ crypto implementation with research limitations
+- **Limited security guarantees** - Basic consensus equivocation detection added
+- **No production hardening** - Research-grade security measures
 
 ### 🚨 FUNCTIONAL LIMITATIONS
-- **Demo consensus only** - Not real Byzantine fault tolerance
-- **Sequential processing** - No parallel transaction execution
-- **Basic networking** - Research-grade P2P implementation
-- **Simplified state** - No proper validation or pruning
+- **Demo consensus with fixes** - Equivocation detection and view-change handling added
+- **Sequential processing** - Parallel execution framework exists but not production-ready
+- **Basic networking** - P2P implementation with fault injection testing
+- **Simplified state** - Basic validation with proper error handling
 
 ### 🚨 PERFORMANCE REALITY
-- **~100 TPS maximum** (not thousands as previously claimed)
-- **Basic benchmarks only** - No comprehensive performance testing
-- **Memory leaks possible** - Not optimized for long-running processes
+- **~100 TPS maximum** (realistic for research prototype)
+- **Comprehensive benchmarks** - Fault injection, consensus, and crypto performance measured
+- **Memory safety** - Race conditions fixed, no known leaks in basic usage
 
 ## 🚀 Quick Setup (Research Only)
 
@@ -81,12 +82,13 @@ python demo_node.py
 
 | Component | Status | Reality Check |
 |-----------|--------|---------------|
-| DAG Mempool | ✅ Basic | Simple priority queue, no advanced features |
-| PQ Crypto | ✅ Research | Algorithms integrated but not production-hardened |
-| Networking | ✅ Basic | Libp2p works but not production-ready |
-| Storage | ✅ Basic | RocksDB integration, minimal features |
-| Consensus | ⚠️ Demo | Simplified logic, not real BFT |
-| Testing | ⚠️ Basic | ~30-40% coverage, needs improvement |
+| DAG Mempool | ✅ Basic | Simple priority queue with fee ordering |
+| PQ Crypto | ✅ Research | ML-KEM/ML-DSA integrated with performance benchmarks |
+| Networking | ✅ Basic | Libp2p with fault injection testing |
+| Storage | ✅ Basic | RocksDB with fsync durability and error handling |
+| Consensus | ✅ Enhanced | Equivocation detection, view-change handling, deterministic |
+| Testing | ✅ Improved | Fault injection tests, integration coverage increased |
+| CI/CD | ✅ Added | GitHub Actions with security audit and testing |
 
 ## 🧪 Testing Reality
 

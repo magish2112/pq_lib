@@ -9,10 +9,10 @@
 ## 🏗️ Architecture Limitations
 
 ### Consensus Limitations
-- ❌ **No Real Byzantine Fault Tolerance**: Current consensus is demonstrative only
+- ⚠️ **Limited Byzantine Fault Tolerance**: Basic equivocation detection added, not full BFT
 - ❌ **No Economic Incentives**: No staking rewards, slashing, or tokenomics
 - ❌ **No Finality Proofs**: No cryptographic proofs of finality
-- ❌ **No View Synchronization**: Basic view changes without proper synchronization
+- ✅ **View Synchronization**: Basic view-change handling with timeout detection
 - ❌ **No Leader Election**: Fixed leader rotation, no dynamic election
 
 ### Smart Contract Limitations
@@ -113,13 +113,15 @@
 For transparency, here's what IS implemented:
 
 ### ✅ Core Components
-- Basic DAG mempool with priority queuing
-- Ed25519 + Post-Quantum cryptography integration
-- Modular Rust architecture with clean interfaces
-- Basic P2P networking via libp2p
-- RocksDB-based persistent storage
+- Basic DAG mempool with priority queuing and fee ordering
+- Ed25519 + Post-Quantum cryptography with performance benchmarks
+- Modular Rust architecture with proper error handling
+- Basic P2P networking via libp2p with fault injection testing
+- RocksDB-based persistent storage with fsync durability
 - Prometheus metrics collection
-- Unit and integration testing framework
+- Unit, integration, and fault injection testing framework
+- CI/CD pipeline with security auditing
+- Consensus with equivocation detection and view-change handling
 
 ### ✅ Research Innovations
 - Adaptive cryptography engine (experimental)

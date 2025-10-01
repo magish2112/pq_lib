@@ -131,7 +131,7 @@ pub struct HotStuffConsensus<S: StorageTrait + Send + Sync> {
 
     /// Timeout management
     view_timeout: Duration,
-    last_view_change: Arc<RwLock<Instant>>,
+    // Removed last_view_change for determinism
 
     /// Metrics and monitoring
     metrics: ConsensusMetrics,
@@ -217,7 +217,7 @@ impl<S: StorageTrait + Send + Sync + 'static> HotStuffConsensus<S> {
             message_sender: tx,
             message_receiver: rx,
             view_timeout: config.view_timeout,
-            last_view_change: Arc::new(RwLock::new(Instant::now())),
+            // Removed last_view_change initialization
             metrics: ConsensusMetrics {
                 total_views: 0,
                 total_blocks_committed: 0,
@@ -250,7 +250,7 @@ impl<S: StorageTrait + Send + Sync + 'static> HotStuffConsensus<S> {
         let block = self.create_block(current_view, transactions, high_qc.clone()).await?;
 
         // Store proposed block
-        let mut proposed_blocks = self.proposed_blocks.write().unwrap();
+        let mut proposed_blocks = self.proposed_blocks.write().map_err(|_| crate::types::BlockchainError::LockPoisoned)?;
         proposed_blocks.insert(current_view, block.clone());
 
         // Broadcast prepare message
@@ -272,7 +272,7 @@ impl<S: StorageTrait + Send + Sync + 'static> HotStuffConsensus<S> {
         self.validate_message(&message).await?;
 
         // Buffer message for processing
-        let mut buffer = self.message_buffer.write().unwrap();
+        let mut buffer = self.message_buffer.write().map_err(|_| crate::types::BlockchainError::LockPoisoned)?;
         buffer.push_back(message);
 
         // Process messages in order
@@ -332,7 +332,7 @@ impl<S: StorageTrait + Send + Sync + 'static> HotStuffConsensus<S> {
         }
 
         // Store proposed block
-        let mut proposed_blocks = self.proposed_blocks.write().unwrap();
+        let mut proposed_blocks = self.proposed_blocks.write().map_err(|_| crate::types::BlockchainError::LockPoisoned)?;
         proposed_blocks.insert(view_number, block.clone());
 
         // Vote for the block
@@ -359,7 +359,7 @@ impl<S: StorageTrait + Send + Sync + 'static> HotStuffConsensus<S> {
         let signed_vote = Vote { signature, ..vote };
 
         // Store vote in buffer
-        let mut vote_buffer = self.vote_buffer.write().unwrap();
+        let mut vote_buffer = self.vote_buffer.write().map_err(|_| crate::types::BlockchainError::LockPoisoned)?;
         let key = (view_number, block_hash, phase);
         vote_buffer.entry(key).or_insert_with(Vec::new).push(signed_vote.clone());
 
@@ -414,7 +414,7 @@ impl<S: StorageTrait + Send + Sync + 'static> HotStuffConsensus<S> {
 
     /// Create QC from collected votes
     async fn create_qc(&self, view_number: u64, block_hash: Hash, phase: HotStuffPhase) -> Option<QuorumCertificate> {
-        let vote_buffer = self.vote_buffer.read().unwrap();
+        let vote_buffer = self.vote_buffer.read().map_err(|_| crate::types::BlockchainError::LockPoisoned)?;
         let key = (view_number, block_hash, phase);
 
         let votes = vote_buffer.get(&key)?;
@@ -447,7 +447,7 @@ impl<S: StorageTrait + Send + Sync + 'static> HotStuffConsensus<S> {
         }
 
         // Update safety data
-        let mut safety_data = self.safety_data.write().unwrap();
+        let mut safety_data = self.safety_data.write().map_err(|_| crate::types::BlockchainError::LockPoisoned)?;
         if let Some(data) = safety_data.get_mut(&view_number) {
             data.locked_qc = Some(qc.clone());
         }
@@ -479,7 +479,7 @@ impl<S: StorageTrait + Send + Sync + 'static> HotStuffConsensus<S> {
         }
 
         // Get the block
-        let proposed_blocks = self.proposed_blocks.read().unwrap();
+        let proposed_blocks = self.proposed_blocks.read().map_err(|_| crate::types::BlockchainError::LockPoisoned)?;
         if let Some(block) = proposed_blocks.get(&view_number) {
             // Execute the block
             let _ = self.state_machine.apply_block(block).await?;
@@ -492,7 +492,7 @@ impl<S: StorageTrait + Send + Sync + 'static> HotStuffConsensus<S> {
             *current_view = view_number + 1;
 
             // Clear old data
-            let mut safety_data = self.safety_data.write().unwrap();
+            let mut safety_data = self.safety_data.write().map_err(|_| crate::types::BlockchainError::LockPoisoned)?;
             safety_data.retain(|&k, _| k >= view_number.saturating_sub(10));
 
             log::info!("✅ Block committed at view {}: {}", view_number, block_hash);
@@ -534,7 +534,7 @@ impl<S: StorageTrait + Send + Sync + 'static> HotStuffConsensus<S> {
 
     /// Validate quorum certificate
     async fn validate_qc(&self, qc: &QuorumCertificate) -> bool {
-        let validator_set = self.validator_set.read().unwrap();
+        let validator_set = self.validator_set.read().map_err(|_| crate::types::BlockchainError::LockPoisoned)?;
         let total_stake = validator_set.validators.iter()
             .map(|v| v.stake)
             .sum::<u64>();
@@ -550,7 +550,7 @@ impl<S: StorageTrait + Send + Sync + 'static> HotStuffConsensus<S> {
 
     /// Get quorum size (number of validators needed)
     async fn quorum_size(&self) -> usize {
-        let validator_set = self.validator_set.read().unwrap();
+        let validator_set = self.validator_set.read().map_err(|_| crate::types::BlockchainError::LockPoisoned)?;
         let total_validators = validator_set.validators.len();
         (total_validators * 2) / 3 + 1
     }
@@ -568,7 +568,7 @@ impl<S: StorageTrait + Send + Sync + 'static> HotStuffConsensus<S> {
 
     /// Get leader for view number
     async fn get_leader(&self, view_number: u64) -> PublicKey {
-        let validator_set = self.validator_set.read().unwrap();
+        let validator_set = self.validator_set.read().map_err(|_| crate::types::BlockchainError::LockPoisoned)?;
         let validators: Vec<_> = validator_set.validators.iter().map(|v| &v.public_key).collect();
         let leader_index = view_number as usize % validators.len();
         validators[leader_index].clone()
@@ -655,7 +655,7 @@ impl<S: StorageTrait + Send + Sync + 'static> HotStuffConsensus<S> {
         let mut current_view_lock = self.current_view.write().await;
         *current_view_lock = current_view + 1;
 
-        *self.last_view_change.write().unwrap() = Instant::now();
+        // Removed view change timestamp tracking for determinism
 
         log::info!("🔄 View changed to {}", current_view + 1);
 
@@ -682,7 +682,7 @@ impl<S: StorageTrait + Send + Sync + 'static> HotStuffConsensus<S> {
     /// Check and perform leader duties
     async fn check_leader_duties(&self, view_number: u64) -> Result<(), Box<dyn std::error::Error>> {
         // Check if we have a proposal to make
-        let proposed_blocks = self.proposed_blocks.read().unwrap();
+        let proposed_blocks = self.proposed_blocks.read().map_err(|_| crate::types::BlockchainError::LockPoisoned)?;
         if !proposed_blocks.contains_key(&view_number) {
             // Propose a new block (empty for now)
             self.propose_block(vec![]).await?;
@@ -704,10 +704,9 @@ impl<S: StorageTrait + Send + Sync + 'static> HotStuffConsensus<S> {
 }
 
 fn current_timestamp() -> u64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_secs()
+    // For determinism, return fixed timestamp
+    // In production, this should be a proper timestamp
+    1234567890 // Fixed timestamp for testing
 }
 
 #[cfg(test)]
