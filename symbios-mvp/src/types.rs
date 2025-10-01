@@ -515,6 +515,7 @@ pub enum BlockchainError {
     ConsensusError(String),
     CryptographicError(String),
     ConfigurationError(String),
+    LockPoisoned,
 }
 
 impl std::fmt::Display for BlockchainError {
@@ -527,11 +528,26 @@ impl std::fmt::Display for BlockchainError {
             BlockchainError::ConsensusError(msg) => write!(f, "Consensus error: {}", msg),
             BlockchainError::CryptographicError(msg) => write!(f, "Cryptographic error: {}", msg),
             BlockchainError::ConfigurationError(msg) => write!(f, "Configuration error: {}", msg),
+            BlockchainError::LockPoisoned => write!(f, "Lock poisoned"),
         }
     }
 }
 
 impl std::error::Error for BlockchainError {}
+
+impl From<Box<dyn std::error::Error>> for BlockchainError {
+    fn from(err: Box<dyn std::error::Error>) -> Self {
+        BlockchainError::StorageError(err.to_string())
+    }
+}
+
+// Removed conflicting From implementation for Box<bincode::ErrorKind>
+
+impl From<bincode::Error> for BlockchainError {
+    fn from(err: bincode::Error) -> Self {
+        BlockchainError::StorageError(format!("Serialization error: {}", err))
+    }
+}
 
 /// Type-safe result type
 pub type BlockchainResult<T> = Result<T, BlockchainError>;

@@ -11,8 +11,8 @@ pub trait StorageTrait: Send + Sync {
     async fn get_transaction(&self, hash: &Hash) -> Result<Option<Transaction>, Box<dyn std::error::Error>>;
     async fn store_block(&self, block: &Block) -> Result<(), Box<dyn std::error::Error>>;
     async fn get_block(&self, hash: &Hash) -> Result<Option<Block>, Box<dyn std::error::Error>>;
-    async fn get_block_by_height(&self, height: u64) -> Result<Option<Block>, Box<dyn std::error::Error>>;
-    async fn get_latest_block(&self) -> Result<Option<Block>, Box<dyn std::error::Error>>;
+    async fn get_block_by_height(&self, height: u64) -> Result<Option<Block>, String>;
+    async fn get_latest_block(&self) -> Result<Option<Block>, String>;
     async fn store_state(&self, state: &State) -> Result<(), Box<dyn std::error::Error>>;
     async fn get_state(&self) -> Result<State, Box<dyn std::error::Error>>;
     async fn store_transaction_receipt(&self, receipt: &crate::state_machine::TransactionReceipt) -> Result<(), Box<dyn std::error::Error>>;

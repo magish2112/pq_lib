@@ -21,9 +21,9 @@ symbios-network/
 ### What This Project Actually Implements
 
 1. **Basic DAG Mempool** - Simple priority queue with fee-based ordering
-2. **Post-Quantum Cryptography** - ML-KEM, ML-DSA, SLH-DSA integration (research level)
+2. **Post-Quantum Cryptography Research** - ML-KEM, ML-DSA, SLH-DSA integration (research level)
 3. **Modular Rust Architecture** - Clean code organization for research
-4. **Basic P2P Networking** - Libp2p integration for peer discovery
+4. **Basic P2P Networking Research** - Libp2p integration for educational purposes
 
 ### Research Areas Under Exploration
 
@@ -41,10 +41,10 @@ symbios-network/
 - **No production hardening** - Research-grade security measures
 
 ### 🚨 FUNCTIONAL LIMITATIONS
-- **Demo consensus with fixes** - Equivocation detection and view-change handling added
-- **Sequential processing** - Parallel execution framework exists but not production-ready
-- **Basic networking** - P2P implementation with fault injection testing
-- **Simplified state** - Basic validation with proper error handling
+- **Research consensus prototype** - Basic BFT concepts with equivocation detection (not production BFT)
+- **Sequential processing only** - No parallel transaction execution implemented
+- **Basic networking research** - Libp2p integration for educational purposes
+- **Simplified state management** - Basic account validation without advanced features
 
 ### 🚨 PERFORMANCE REALITY
 - **~100 TPS maximum** (realistic for research prototype)
@@ -86,7 +86,7 @@ python demo_node.py
 | PQ Crypto | ✅ Research | ML-KEM/ML-DSA integrated with performance benchmarks |
 | Networking | ✅ Basic | Libp2p with fault injection testing |
 | Storage | ✅ Basic | RocksDB with fsync durability and error handling |
-| Consensus | ✅ Enhanced | Equivocation detection, view-change handling, deterministic |
+| Consensus | 🔬 Research | Basic BFT concepts with equivocation detection (not production BFT) |
 | Testing | ✅ Improved | Fault injection tests, integration coverage increased |
 | CI/CD | ✅ Added | GitHub Actions with security audit and testing |
 

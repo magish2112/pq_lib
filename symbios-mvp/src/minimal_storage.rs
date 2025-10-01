@@ -10,7 +10,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use async_trait::async_trait;
-use crate::types::{Transaction, Block, State, Hash};
+use crate::types::{Transaction, Block, State, Hash, BlockchainError};
 
 /// Storage entry types
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -215,7 +215,7 @@ impl MinimalStorage {
     }
 
     /// Retrieve entry from file
-    async fn retrieve_entry(&self, key: &[u8]) -> Result<Option<StorageEntry>, Box<dyn std::error::Error>> {
+    async fn retrieve_entry(&self, key: &[u8]) -> Result<Option<StorageEntry>, Box<dyn std::error::Error + Send + Sync>> {
         let pos = {
             let index = self.index.read().await;
             match index.get(key) {
@@ -278,7 +278,7 @@ impl crate::storage::StorageTrait for MinimalStorage {
 
     async fn get_transaction(&self, hash: &Hash) -> Result<Option<Transaction>, Box<dyn std::error::Error>> {
         let key = format!("tx_{}", hex::encode(&hash.as_bytes()[..8])).into_bytes();
-        match self.retrieve_entry(key.as_slice()).await? {
+        match self.retrieve_entry(key.as_slice()).await.map_err(|e| e.into())? {
             Some(entry) => {
                 let tx: Transaction = bincode::deserialize(&entry.data)?;
                 Ok(Some(tx))
@@ -309,7 +309,7 @@ impl crate::storage::StorageTrait for MinimalStorage {
 
     async fn get_block(&self, hash: &Hash) -> Result<Option<Block>, Box<dyn std::error::Error>> {
         let key = format!("block_{}", hex::encode(&hash.as_bytes()[..8])).into_bytes();
-        match self.retrieve_entry(key.as_slice()).await? {
+        match self.retrieve_entry(key.as_slice()).await.map_err(|e| e.into())? {
             Some(entry) => {
                 let block: Block = bincode::deserialize(&entry.data)?;
                 Ok(Some(block))
@@ -318,25 +318,27 @@ impl crate::storage::StorageTrait for MinimalStorage {
         }
     }
 
-    async fn get_block_by_height(&self, height: u64) -> Result<Option<Block>, Box<dyn std::error::Error>> {
+    async fn get_block_by_height(&self, height: u64) -> Result<Option<Block>, String> {
         let height_key = format!("height_{}", height).into_bytes();
-        match self.retrieve_entry(&height_key).await? {
-            Some(entry) => {
-                let block_hash: Hash = bincode::deserialize(&entry.data)?;
-                self.get_block(&block_hash).await
+        match self.retrieve_entry(&height_key).await {
+            Ok(Some(entry)) => {
+                let block_hash: Hash = bincode::deserialize(&entry.data).map_err(|e| format!("Deserialization error: {}", e))?;
+                self.get_block(&block_hash).await.map_err(|e| format!("Storage error: {}", e))
             }
-            None => Ok(None),
+            Ok(None) => Ok(None),
+            Err(e) => Err(format!("Storage error: {}", e)),
         }
     }
 
-    async fn get_latest_block(&self) -> Result<Option<Block>, Box<dyn std::error::Error>> {
+    async fn get_latest_block(&self) -> Result<Option<Block>, String> {
         let latest_key = b"latest_block";
-        match self.retrieve_entry(latest_key).await? {
-            Some(entry) => {
-                let block_hash: Hash = bincode::deserialize(&entry.data)?;
-                self.get_block(&block_hash).await
+        match self.retrieve_entry(latest_key).await {
+            Ok(Some(entry)) => {
+                let block_hash: Hash = bincode::deserialize(&entry.data).map_err(|e| format!("Deserialization error: {}", e))?;
+                self.get_block(&block_hash).await.map_err(|e| format!("Storage error: {}", e))
             }
-            None => Ok(None),
+            Ok(None) => Ok(None),
+            Err(e) => Err(format!("Storage error: {}", e)),
         }
     }
 
@@ -349,7 +351,7 @@ impl crate::storage::StorageTrait for MinimalStorage {
 
     async fn get_state(&self) -> Result<State, Box<dyn std::error::Error>> {
         let key = b"current_state";
-        match self.retrieve_entry(key.as_slice()).await? {
+        match self.retrieve_entry(key.as_slice()).await.map_err(|e| e.into())? {
             Some(entry) => {
                 let state: State = bincode::deserialize(&entry.data)?;
                 Ok(state)
@@ -367,7 +369,7 @@ impl crate::storage::StorageTrait for MinimalStorage {
 
     async fn get_transaction_receipt(&self, tx_hash: &Hash) -> Result<Option<crate::state_machine::TransactionReceipt>, Box<dyn std::error::Error>> {
         let key = format!("receipt_{}", hex::encode(&tx_hash.as_bytes()[..8])).into_bytes();
-        match self.retrieve_entry(key.as_slice()).await? {
+        match self.retrieve_entry(key.as_slice()).await.map_err(|e| e.into())? {
             Some(entry) => {
                 let receipt: crate::state_machine::TransactionReceipt = bincode::deserialize(&entry.data)?;
                 Ok(Some(receipt))

@@ -1,9 +1,9 @@
-//! Production-Grade HotStuff BFT Consensus Protocol
+//! Research HotStuff Consensus Prototype
 //!
-//! Implementation of the HotStuff consensus algorithm - a simplified,
-//! correct, and efficient BFT protocol that provides optimal resilience
-//! and performance. This replaces the demo consensus with a production-ready
-//! solution with formal safety and liveness guarantees.
+//! Experimental implementation of HotStuff consensus concepts for research
+//! purposes. This is NOT a production-ready BFT implementation and should
+//! only be used for educational and research purposes. Contains basic
+//! BFT concepts but lacks full formal verification and security guarantees.
 
 use std::collections::{HashMap, HashSet, VecDeque, BTreeMap};
 use std::sync::{Arc, RwLock};
@@ -272,16 +272,36 @@ impl<S: StorageTrait + Send + Sync + 'static> HotStuffConsensus<S> {
         self.validate_message(&message).await?;
 
         // Buffer message for processing
-        let mut buffer = self.message_buffer.write().map_err(|_| crate::types::BlockchainError::LockPoisoned)?;
-        buffer.push_back(message);
+        {
+            let mut buffer = self.message_buffer.write().map_err(|_| crate::types::BlockchainError::LockPoisoned)?;
+            buffer.push_back(message);
+        }
 
-        // Process messages in order
-        while let Some(msg) = buffer.front().cloned() {
-            if self.can_process_message(&msg).await {
-                buffer.pop_front();
+        // Process messages in order (separate scope to avoid borrowing issues)
+        loop {
+            let msg = {
+                let buffer = self.message_buffer.read().map_err(|_| crate::types::BlockchainError::LockPoisoned)?;
+                if let Some(msg) = buffer.front().cloned() {
+                    if self.can_process_message(&msg).await {
+                        Some(msg)
+                    } else {
+                        None // Wait for more messages
+                    }
+                } else {
+                    None // No messages to process
+                }
+            };
+
+            if let Some(msg) = msg {
+                // Remove message from buffer
+                {
+                    let mut buffer = self.message_buffer.write().map_err(|_| crate::types::BlockchainError::LockPoisoned)?;
+                    buffer.pop_front();
+                }
+                // Process the message
                 self.process_message_internal(msg).await?;
             } else {
-                break; // Wait for more messages
+                break;
             }
         }
 
@@ -414,7 +434,7 @@ impl<S: StorageTrait + Send + Sync + 'static> HotStuffConsensus<S> {
 
     /// Create QC from collected votes
     async fn create_qc(&self, view_number: u64, block_hash: Hash, phase: HotStuffPhase) -> Option<QuorumCertificate> {
-        let vote_buffer = self.vote_buffer.read().map_err(|_| crate::types::BlockchainError::LockPoisoned)?;
+        let vote_buffer = self.vote_buffer.read().ok()?;
         let key = (view_number, block_hash, phase);
 
         let votes = vote_buffer.get(&key)?;
@@ -534,7 +554,11 @@ impl<S: StorageTrait + Send + Sync + 'static> HotStuffConsensus<S> {
 
     /// Validate quorum certificate
     async fn validate_qc(&self, qc: &QuorumCertificate) -> bool {
-        let validator_set = self.validator_set.read().map_err(|_| crate::types::BlockchainError::LockPoisoned)?;
+        let validator_set = match self.validator_set.read().ok() {
+            Some(vs) => vs,
+            None => return false,
+        };
+
         let total_stake = validator_set.validators.iter()
             .map(|v| v.stake)
             .sum::<u64>();
@@ -550,7 +574,10 @@ impl<S: StorageTrait + Send + Sync + 'static> HotStuffConsensus<S> {
 
     /// Get quorum size (number of validators needed)
     async fn quorum_size(&self) -> usize {
-        let validator_set = self.validator_set.read().map_err(|_| crate::types::BlockchainError::LockPoisoned)?;
+        let validator_set = match self.validator_set.read().ok() {
+            Some(vs) => vs,
+            None => return 1, // fallback
+        };
         let total_validators = validator_set.validators.len();
         (total_validators * 2) / 3 + 1
     }
@@ -568,8 +595,14 @@ impl<S: StorageTrait + Send + Sync + 'static> HotStuffConsensus<S> {
 
     /// Get leader for view number
     async fn get_leader(&self, view_number: u64) -> PublicKey {
-        let validator_set = self.validator_set.read().map_err(|_| crate::types::BlockchainError::LockPoisoned)?;
+        let validator_set = match self.validator_set.read().ok() {
+            Some(vs) => vs,
+            None => return PublicKey::new("fallback_leader".to_string()), // fallback
+        };
         let validators: Vec<_> = validator_set.validators.iter().map(|v| &v.public_key).collect();
+        if validators.is_empty() {
+            return PublicKey::new("empty_validator_set".to_string());
+        }
         let leader_index = view_number as usize % validators.len();
         validators[leader_index].clone()
     }
@@ -606,17 +639,7 @@ impl<S: StorageTrait + Send + Sync + 'static> HotStuffConsensus<S> {
         Ok(bincode::serialize(vote)?)
     }
 
-    /// Message processing loop
-    async fn message_processing_loop(
-        consensus: Arc<Self>,
-        mut receiver: mpsc::UnboundedReceiver<HotStuffMessage>,
-    ) {
-        while let Some(message) = receiver.recv().await {
-            if let Err(e) = consensus.process_message(message).await {
-                log::error!("Error processing consensus message: {:?}", e);
-            }
-        }
-    }
+    // Removed message processing loop - using synchronous processing instead
 
     /// View management loop (handles timeouts and view changes)
     async fn view_management_loop(consensus: Arc<Self>) {

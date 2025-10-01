@@ -9,11 +9,12 @@
 ## 🏗️ Architecture Limitations
 
 ### Consensus Limitations
-- ⚠️ **Limited Byzantine Fault Tolerance**: Basic equivocation detection added, not full BFT
+- ❌ **No Real BFT Implementation**: Only basic concepts, not production BFT protocol
+- ❌ **No Byzantine Fault Tolerance**: Research prototype without formal verification
 - ❌ **No Economic Incentives**: No staking rewards, slashing, or tokenomics
 - ❌ **No Finality Proofs**: No cryptographic proofs of finality
-- ✅ **View Synchronization**: Basic view-change handling with timeout detection
-- ❌ **No Leader Election**: Fixed leader rotation, no dynamic election
+- ⚠️ **Basic View Changes**: Simple timeout-based view changes, not robust
+- ❌ **No Leader Election**: Fixed rotation, no dynamic election or stake weighting
 
 ### Smart Contract Limitations
 - ❌ **No Virtual Machine**: No EVM or WASM execution environment
@@ -112,16 +113,16 @@
 
 For transparency, here's what IS implemented:
 
-### ✅ Core Components
+### ✅ Research Components Implemented
 - Basic DAG mempool with priority queuing and fee ordering
-- Ed25519 + Post-Quantum cryptography with performance benchmarks
+- Ed25519 + Post-Quantum cryptography research with performance benchmarks
 - Modular Rust architecture with proper error handling
-- Basic P2P networking via libp2p with fault injection testing
+- Basic P2P networking research via libp2p with fault injection testing
 - RocksDB-based persistent storage with fsync durability
-- Prometheus metrics collection
+- Prometheus metrics collection for monitoring
 - Unit, integration, and fault injection testing framework
-- CI/CD pipeline with security auditing
-- Consensus with equivocation detection and view-change handling
+- CI/CD pipeline with basic security auditing
+- Research consensus prototype with basic equivocation detection
 
 ### ✅ Research Innovations
 - Adaptive cryptography engine (experimental)

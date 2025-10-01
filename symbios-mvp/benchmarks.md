@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document contains basic performance benchmarks for the Symbios Network research prototype. All measurements are from controlled local testing.
+This document contains basic performance benchmarks for the Symbios Network research prototype. All measurements are from controlled local testing and represent research-level performance, not production capabilities.
 
 **Test Environment:**
 - **Hardware**: Intel i7-9750H, 32GB RAM, NVMe SSD
@@ -12,13 +12,13 @@ This document contains basic performance benchmarks for the Symbios Network rese
 
 ---
 
-## 🚀 Consensus Protocol Benchmarks
+## 🚀 Consensus Research Benchmarks
 
-### Demo Consensus
+### Research Consensus Prototype
 
 #### Single Node Performance
 ```
-Test: demo_consensus_single
+Test: research_consensus_single
 Time: 10.2 ms ± 1.5 ms
 TPS: 98.0 ± 12.3
 p50 Latency: 8.5 ms
@@ -26,9 +26,9 @@ p95 Latency: 15.2 ms
 p99 Latency: 22.1 ms
 ```
 
-#### Multi-Node Simulation (4 nodes)
+#### Multi-Node Research Simulation (4 nodes)
 ```
-Test: demo_consensus_4_nodes
+Test: research_consensus_4_nodes
 Time: 45.3 ms ± 8.7 ms
 TPS: 22.1 ± 4.2
 p50 Latency: 35.6 ms
