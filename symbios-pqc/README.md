@@ -1,8 +1,8 @@
-# pq_lib - Post-Quantum Cryptography Library
+# Symbios PQC - Post-Quantum Cryptography for Blockchains
 
 [![Crates.io](https://img.shields.io/crates/v/symbios-pqc.svg)](https://crates.io/crates/symbios-pqc)
 [![Documentation](https://docs.rs/symbios-pqc/badge.svg)](https://docs.rs/symbios-pqc)
-[![License](https://img.shields.io/badge/license-Apache%202.0%20OR%20MIT-blue.svg)](https://github.com/magish2112/pq_lib#license)
+[![License](https://img.shields.io/badge/license-Apache%202.0%20OR%20MIT-blue.svg)](https://github.com/magish2112/symbios-pqc#license)
 [![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org)
 
 A production-grade Rust library providing hybrid cryptographic primitives specifically designed for blockchain applications. Combines classical Ed25519 signatures with post-quantum algorithms (ML-DSA, SLH-DSA) for forward-compatibility and optimal security-performance balance.
@@ -26,8 +26,8 @@ The library implements a **Strangler Fig pattern** for gradual migration:
 │   Ed25519 Only  │ -> │  Hybrid Ed25519  │
 │   (Legacy)      │    │  + ML-DSA/SLH   │
 └─────────────────┘    └──────────────────┘
-                             |
-                             v
+                              |
+                              v
                        ┌──────────────────┐
                        │   PQ Only        │
                        │   (Future)       │
@@ -259,8 +259,8 @@ We welcome contributions! Please see our [contributing guide](CONTRIBUTING.md) f
 ### Development Setup
 
 ```bash
-git clone https://github.com/magish2112/pq_lib
-cd pq_lib
+git clone https://github.com/magish2112/symbios-pqc
+cd symbios-pqc
 cargo test
 cargo bench
 ```
@@ -269,8 +269,8 @@ cargo bench
 
 Licensed under either of:
 
-- Apache License, Version 2.0 ([LICENSE-APACHE](symbios-pqc/LICENSE-APACHE))
-- MIT License ([LICENSE-MIT](symbios-pqc/LICENSE-MIT))
+- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE))
+- MIT License ([LICENSE-MIT](LICENSE-MIT))
 
 at your option.
 
@@ -314,6 +314,7 @@ This library is in active development. Please report security issues to security
 - [pqcrypto] - Rust bindings for PQ algorithms
 - [ed25519-dalek] - Ed25519 implementation
 - [rustls-pki-types] - PKI types for TLS
+- [symbios-network] - Main blockchain implementation
 
 ## Acknowledgments
 
@@ -324,3 +325,4 @@ This library is in active development. Please report security issues to security
 ---
 
 *"The transition to post-quantum cryptography is not a sprint, but a carefully planned marathon."*
+
