@@ -1,24 +1,32 @@
-name: CI Pipeline
+name: CI
 
 on:
   push:
-    branches: [ master, main ]
+    branches: [ master ]
   pull_request:
-    branches: [ master, main ]
+    branches: [ master ]
+
+env:
+  CARGO_TERM_COLOR: always
 
 jobs:
   test:
-    name: Test Suite
+    name: Test
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust:
+          - stable
+          - beta
+          - 1.70.0  # MSRV
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
     - name: Install Rust
-      uses: dtolnay/rust-toolchain@stable
+      uses: dtolnay/rust-toolchain@master
       with:
-        components: clippy, rustfmt
+        toolchain: ${{ matrix.rust }}
 
     - name: Cache dependencies
       uses: actions/cache@v3
@@ -27,144 +35,87 @@ jobs:
           ~/.cargo/registry
           ~/.cargo/git
           target
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        key: ${{ runner.os }}-cargo-${{ matrix.rust }}-${{ hashFiles('**/Cargo.lock') }}
 
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y protobuf-compiler
+    - name: Check
+      run: cargo check --all-targets --all-features
+
+    - name: Test
+      run: cargo test --all-features
+
+    - name: Test (no_std)
+      run: cargo test --no-default-features
+
+  fmt:
+    name: Rustfmt
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@master
+      with:
+        components: rustfmt
+        toolchain: stable
 
     - name: Check formatting
-      run: |
-        cd symbios-mvp
-        cargo fmt --check
+      run: cargo fmt --all --check
 
-    - name: Clippy linting
-      run: |
-        cd symbios-mvp
-        cargo clippy -- -D warnings
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
 
-    - name: Run unit tests
-      run: |
-        cd symbios-mvp
-        cargo test --lib --bins --tests --benches --workspace --exclude integration_tests
+    steps:
+    - uses: actions/checkout@v4
 
-    - name: Run integration tests
-      run: |
-        cd symbios-mvp
-        cargo test --test integration_tests
-
-    - name: Run benchmarks (dry run)
-      run: |
-        cd symbios-mvp
-        cargo bench --no-run
-
-    - name: Security audit
-      uses: actions-rs/audit@v1
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@master
       with:
-        working-directory: symbios-mvp
+        components: clippy
+        toolchain: stable
 
-    - name: Build release
-      run: |
-        cd symbios-mvp
-        cargo build --release
-
-    - name: Run demo script (smoke test)
-      run: |
-        cd symbios-mvp
-        python demo_node.py &
-        DEMO_PID=$!
-        sleep 10
-        kill $DEMO_PID || true
-
-  license-check:
-    name: License Compatibility
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Check license compatibility
-      run: |
-        cd symbios-mvp
-        # Check that all dependencies have compatible licenses
-        cargo tree --format "{p} {l}" | grep -E "(Apache|MIT|BSD|ISC)" | wc -l
-        cargo tree --format "{p} {l}" | grep -v -E "(Apache|MIT|BSD|ISC)" || echo "All dependencies have compatible licenses"
-
-  determinism-check:
-    name: Determinism Check
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Install Rust
-      uses: dtolnay/rust-toolchain@stable
-
-    - name: Run deterministic tests multiple times
-      run: |
-        cd symbios-mvp
-        for i in {1..3}; do
-          echo "Run $i:"
-          cargo test deterministic_tests -- --nocapture || exit 1
-          echo "---"
-        done
-
-  performance-regression:
-    name: Performance Regression Test
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Install Rust
-      uses: dtolnay/rust-toolchain@stable
-
-    - name: Run performance benchmarks
-      run: |
-        cd symbios-mvp
-        cargo bench
-        # Store benchmark results for comparison
-        mkdir -p benchmark-results
-        cp -r target/criterion/* benchmark-results/ || true
-
-    - name: Upload benchmark results
-      uses: actions/upload-artifact@v3
+    - name: Cache dependencies
+      uses: actions/cache@v3
       with:
-        name: benchmark-results
-        path: symbios-mvp/benchmark-results/
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-clippy-${{ hashFiles('**/Cargo.lock') }}
 
-  fault-injection:
-    name: Fault Injection Tests
+    - name: Clippy
+      run: cargo clippy --all-targets --all-features -- -D warnings
+
+  docs:
+    name: Docs
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
     - name: Install Rust
-      uses: dtolnay/rust-toolchain@stable
+      uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: stable
 
-    - name: Run fault injection tests
-      run: |
-        cd symbios-mvp
-        cargo test fault_injection -- --nocapture
-        cargo test crash_recovery -- --nocapture
-        cargo test partition_recovery -- --nocapture
+    - name: Check docs
+      run: cargo doc --all-features --document-private-items
 
-  final-check:
-    name: Final Validation
+  minimal-versions:
+    name: Minimal Versions
     runs-on: ubuntu-latest
-    needs: [test, license-check, determinism-check, performance-regression, fault-injection]
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-    - name: Final validation
-      run: |
-        echo "All checks passed! ✅"
-        echo "Ready for merge to main branch."
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: nightly
+
+    - name: Install cargo-minimal-versions
+      run: cargo install cargo-minimal-versions
+
+    - name: Check minimal versions
+      run: cargo minimal-versions check

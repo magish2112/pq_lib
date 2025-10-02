@@ -1,11 +1,30 @@
 # pq_lib - Post-Quantum Cryptography Library
 
-[![Crates.io](https://img.shields.io/crates/v/symbios-pqc.svg)](https://crates.io/crates/symbios-pqc)
-[![Documentation](https://docs.rs/symbios-pqc/badge.svg)](https://docs.rs/symbios-pqc)
+> 🚧 **WORK IN PROGRESS** - MVP implementation in development
+
 [![License](https://img.shields.io/badge/license-Apache%202.0%20OR%20MIT-blue.svg)](https://github.com/magish2112/pq_lib#license)
 [![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org)
 
 A production-grade Rust library providing hybrid cryptographic primitives specifically designed for blockchain applications. Combines classical Ed25519 signatures with post-quantum algorithms (ML-DSA, SLH-DSA) for forward-compatibility and optimal security-performance balance.
+
+## Development Status
+
+| Feature | Status | Progress |
+|---------|--------|----------|
+| 🏗️ Project Structure | ✅ Complete | Basic Cargo.toml, src/ layout |
+| 🔧 Core Types | ✅ Complete | AlgorithmId, HybridKeypair, HybridSignature |
+| 🧪 Unit Tests | 🔄 In Progress | Basic tests for core types |
+| 🔄 CI/CD | 🔄 Planned | GitHub Actions setup |
+| 🔐 MVP Crypto | 🔄 Planned | Ed25519 + ML-DSA hybrid signatures |
+| 📊 Test Coverage | 🔄 Planned | 50%+ unit & integration tests |
+| ⚡ Benchmarks | 🔄 Planned | Performance measurements |
+| 🏷️ Domain Separation | 🔄 Planned | TX/Block domain separation |
+| 🚨 Error Handling | ✅ Complete | Custom error types |
+| 📋 Policy Validation | 🔄 Planned | Classic/Hybrid/PQ-only policies |
+| 📦 Serialization | 🔄 Planned | CBOR format with versioning |
+| 🎲 Property Tests | 🔄 Planned | Proptest for invariants |
+| 📚 Documentation | 🔄 Planned | Doctests & examples |
+| 🔗 Blockchain Integration | 🔄 Planned | Substrate example |
 
 ## Key Features
 

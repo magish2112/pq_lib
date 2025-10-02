@@ -2,7 +2,7 @@
 
 use core::fmt;
 
-/// Algorithm identifiers for hybrid cryptography
+/// Supported cryptographic algorithms
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde-support", derive(serde::Serialize, serde::Deserialize))]
 #[repr(u8)]
@@ -147,5 +147,10 @@ mod tests {
         #[cfg(feature = "ed25519")]
         assert_eq!(first, Some(AlgorithmId::Ed25519));
     }
-}
 
+    #[test]
+    fn test_algorithm_display() {
+        assert_eq!(format!("{}", AlgorithmId::Ed25519), "Ed25519");
+        assert_eq!(format!("{}", AlgorithmId::MlDsa65), "ML-DSA-65 + Ed25519");
+    }
+}
