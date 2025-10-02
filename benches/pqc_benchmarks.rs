@@ -1,7 +1,7 @@
 //! Comprehensive benchmarks for Symbios PQC
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use symbios_pqc::*;
+use pq_lib::*;
 use tokio::runtime::Runtime;
 
 fn bench_keypair_generation(c: &mut Criterion) {
@@ -171,29 +171,29 @@ fn bench_serialization(c: &mut Criterion) {
 
     group.bench_function("serialize_signature", |b| {
         b.iter(|| {
-            black_box(symbios_pqc::serialization::serialize_signature(&signature).unwrap())
+            black_box(pq_lib::serialization::serialize_signature(&signature).unwrap())
         })
     });
 
-    let serialized = symbios_pqc::serialization::serialize_signature(&signature).unwrap();
+    let serialized = pq_lib::serialization::serialize_signature(&signature).unwrap();
 
     group.bench_function("deserialize_signature", |b| {
         b.iter(|| {
-            black_box(symbios_pqc::serialization::deserialize_signature(&serialized).unwrap())
+            black_box(pq_lib::serialization::deserialize_signature(&serialized).unwrap())
         })
     });
 
     group.bench_function("serialize_public_key", |b| {
         b.iter(|| {
-            black_box(symbios_pqc::serialization::serialize_public_key(&keypair.public_key).unwrap())
+            black_box(pq_lib::serialization::serialize_public_key(&keypair.public_key).unwrap())
         })
     });
 
-    let pub_serialized = symbios_pqc::serialization::serialize_public_key(&keypair.public_key).unwrap();
+    let pub_serialized = pq_lib::serialization::serialize_public_key(&keypair.public_key).unwrap();
 
     group.bench_function("deserialize_public_key", |b| {
         b.iter(|| {
-            black_box(symbios_pqc::serialization::deserialize_public_key(&pub_serialized).unwrap())
+            black_box(pq_lib::serialization::deserialize_public_key(&pub_serialized).unwrap())
         })
     });
 

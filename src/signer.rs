@@ -1,12 +1,14 @@
 //! Production-ready hybrid signer implementation
 
 use core::fmt;
-use sha3::{Digest, Sha3_256};
 
 use crate::{
     AlgorithmId, DomainSeparator, HybridKeypair, HybridPrivateKey, HybridPublicKey, HybridSignature,
     KeyGenerator, Signer, Verifier, KemProvider, ValidationPolicy, CryptoResult, domain,
 };
+
+#[cfg(feature = "ed25519")]
+use ed25519_dalek::{Keypair, PublicKey, SecretKey, Signature, Signer as EdSigner, Verifier as EdVerifier};
 
 /// Production-ready hybrid signer implementation
 pub struct HybridSigner;
@@ -17,21 +19,52 @@ impl HybridSigner {
         domain::create_domain_separated_message(domain, data)
     }
 
-    /// Sign with Ed25519 (mock implementation using hash)
-    fn sign_ed25519(data: &[u8], private_key: &[u8]) -> Vec<u8> {
+    /// Sign with Ed25519 using real cryptographic operations
+    #[cfg(feature = "ed25519")]
+    fn sign_ed25519(data: &[u8], private_key: &[u8]) -> Result<Vec<u8>, CryptoError> {
+        let secret_key = SecretKey::from_bytes(private_key)
+            .map_err(|_| CryptoError::InvalidKey("Invalid Ed25519 private key".to_string()))?;
+
+        let keypair = Keypair {
+            secret: secret_key,
+            public: PublicKey::from(&secret_key),
+        };
+
+        let signature = keypair.sign(data);
+        Ok(signature.to_bytes().to_vec())
+    }
+
+    /// Sign with Ed25519 (fallback for no_std)
+    #[cfg(not(feature = "ed25519"))]
+    fn sign_ed25519(data: &[u8], private_key: &[u8]) -> Result<Vec<u8>, CryptoError> {
+        use sha3::{Digest, Sha3_256};
         let mut hasher = Sha3_256::new();
         hasher.update(data);
         hasher.update(private_key);
-        hasher.finalize().to_vec()
+        Ok(hasher.finalize().to_vec())
     }
 
-    /// Verify Ed25519 signature (mock implementation)
-    fn verify_ed25519(data: &[u8], signature: &[u8], public_key: &[u8]) -> bool {
+    /// Verify Ed25519 signature using real cryptographic operations
+    #[cfg(feature = "ed25519")]
+    fn verify_ed25519(data: &[u8], signature: &[u8], public_key: &[u8]) -> Result<bool, CryptoError> {
+        let public_key = PublicKey::from_bytes(public_key)
+            .map_err(|_| CryptoError::InvalidKey("Invalid Ed25519 public key".to_string()))?;
+
+        let signature = Signature::from_bytes(signature)
+            .map_err(|_| CryptoError::InvalidSignature("Invalid Ed25519 signature".to_string()))?;
+
+        Ok(public_key.verify(data, &signature).is_ok())
+    }
+
+    /// Verify Ed25519 signature (fallback for no_std)
+    #[cfg(not(feature = "ed25519"))]
+    fn verify_ed25519(data: &[u8], signature: &[u8], public_key: &[u8]) -> Result<bool, CryptoError> {
+        use sha3::{Digest, Sha3_256};
         let mut hasher = Sha3_256::new();
         hasher.update(data);
         hasher.update(public_key);
         let expected = hasher.finalize();
-        signature == expected.as_slice()
+        Ok(signature == expected.as_slice())
     }
 
     /// Sign with PQ algorithm (mock implementation)
@@ -61,31 +94,69 @@ impl KeyGenerator for HybridSigner {
             return Err(crate::CryptoError::UnsupportedAlgorithm(algorithm.to_string()));
         }
 
-        // Generate Ed25519 keypair using rand
-        let ed25519_secret: [u8; 32] = rand::random();
-        let ed25519_key = ed25519_secret.to_vec();
+        #[cfg(feature = "ed25519")]
+        {
+            // Generate real Ed25519 keypair
+            let mut secret_key_bytes = [0u8; 32];
+            rand::fill(&mut secret_key_bytes);
+            let secret_key = SecretKey::from_bytes(&secret_key_bytes)
+                .map_err(|_| CryptoError::InternalError("Failed to create Ed25519 secret key".to_string()))?;
 
-        // For Ed25519-only, we're done
-        if algorithm == AlgorithmId::Ed25519 {
-            let public_key = HybridPublicKey::from_ed25519(ed25519_key.clone());
-            let private_key = HybridPrivateKey::from_ed25519(ed25519_key);
-            return Ok(HybridKeypair::new(public_key, private_key));
+            let public_key = PublicKey::from(&secret_key);
+            let ed25519_public = public_key.to_bytes().to_vec();
+            let ed25519_private = secret_key.to_bytes().to_vec();
+
+            // For Ed25519-only, we're done
+            if algorithm == AlgorithmId::Ed25519 {
+                let public_key = HybridPublicKey::from_ed25519(ed25519_public);
+                let private_key = HybridPrivateKey::from_ed25519(ed25519_private);
+                return Ok(HybridKeypair::new(public_key, private_key));
+            }
+
+            // Generate PQ keypair (mock implementation for now)
+            let pq_key_size = match algorithm {
+                AlgorithmId::MlDsa65 => 64,
+                AlgorithmId::MlDsa87 => 64,
+                AlgorithmId::SlhDsaShake256f => 32,
+                AlgorithmId::Ed25519 => unreachable!(),
+            };
+
+            let mut pq_secret = vec![0u8; pq_key_size];
+            rand::fill(&mut pq_secret);
+
+            let public_key = HybridPublicKey::new(algorithm, ed25519_public, pq_secret.clone());
+            let private_key = HybridPrivateKey::new(algorithm, ed25519_private, pq_secret);
+
+            Ok(HybridKeypair::new(public_key, private_key))
         }
 
-        // Generate PQ keypair (mock implementation)
-        let pq_key_size = match algorithm {
-            AlgorithmId::MlDsa65 => 64,
-            AlgorithmId::MlDsa87 => 64,
-            AlgorithmId::SlhDsaShake256f => 32,
-            AlgorithmId::Ed25519 => unreachable!(),
-        };
+        #[cfg(not(feature = "ed25519"))]
+        {
+            // Fallback for no_std without ed25519
+            let ed25519_secret: [u8; 32] = rand::random();
+            let ed25519_key = ed25519_secret.to_vec();
 
-        let pq_secret: Vec<u8> = (0..pq_key_size).map(|_| rand::random()).collect();
+            if algorithm == AlgorithmId::Ed25519 {
+                let public_key = HybridPublicKey::from_ed25519(ed25519_key.clone());
+                let private_key = HybridPrivateKey::from_ed25519(ed25519_key);
+                return Ok(HybridKeypair::new(public_key, private_key));
+            }
 
-        let public_key = HybridPublicKey::new(algorithm, ed25519_key.clone(), pq_secret.clone());
-        let private_key = HybridPrivateKey::new(algorithm, ed25519_key, pq_secret);
+            // Mock PQ keypair for no_std
+            let pq_key_size = match algorithm {
+                AlgorithmId::MlDsa65 => 64,
+                AlgorithmId::MlDsa87 => 64,
+                AlgorithmId::SlhDsaShake256f => 32,
+                AlgorithmId::Ed25519 => unreachable!(),
+            };
 
-        Ok(HybridKeypair::new(public_key, private_key))
+            let pq_secret: Vec<u8> = (0..pq_key_size).map(|_| rand::random()).collect();
+
+            let public_key = HybridPublicKey::new(algorithm, ed25519_key.clone(), pq_secret.clone());
+            let private_key = HybridPrivateKey::new(algorithm, ed25519_key, pq_secret);
+
+            Ok(HybridKeypair::new(public_key, private_key))
+        }
     }
 }
 
@@ -100,13 +171,13 @@ impl Signer for HybridSigner {
         let domain_separated_data = Self::create_domain_message(data, domain);
 
         // Sign with Ed25519 (always present)
-        let ed25519_sig = Self::sign_ed25519(&domain_separated_data, &private_key.ed25519_key);
+        let ed25519_sig = Self::sign_ed25519(&domain_separated_data, &private_key.ed25519_key)?;
 
         // Sign with PQ algorithm if required
-        let pq_sig = if private_key.has_pq_key() {
+        let pq_sig = if private_key.pq_key.is_some() {
             #[cfg(any(feature = "ml-dsa", feature = "slh-dsa"))]
             {
-                Some(Self::sign_pq(&domain_separated_data, private_key.pq_key(), private_key.algorithm))
+                Some(Self::sign_pq(&domain_separated_data, private_key.pq_key.as_ref().unwrap(), private_key.algorithm))
             }
             #[cfg(not(any(feature = "ml-dsa", feature = "slh-dsa")))]
             {
@@ -144,7 +215,7 @@ impl Verifier for HybridSigner {
             &domain_separated_data,
             &signature.ed25519_sig,
             &public_key.ed25519_key,
-        );
+        )?;
 
         // Verify PQ signature if present and required
         let pq_valid = if signature.has_pq_signature() && public_key.has_pq_key() {
@@ -152,8 +223,8 @@ impl Verifier for HybridSigner {
             {
                 Self::verify_pq(
                     &domain_separated_data,
-                    signature.pq_sig(),
-                    public_key.pq_key(),
+                    signature.pq_sig.as_ref().unwrap(),
+                    public_key.pq_key.as_ref().unwrap(),
                     signature.algorithm,
                 )
             }

@@ -53,6 +53,47 @@ impl HybridSignature {
         }
     }
 
+    /// Validate signature format and consistency
+    pub fn validate_format(&self) -> CryptoResult<()> {
+        // Check version
+        if self.version != Self::CURRENT_VERSION {
+            return Err(CryptoError::InvalidSignature(
+                format!("Unsupported signature version: {}", self.version)
+            ));
+        }
+
+        // Check Ed25519 signature size
+        if self.ed25519_sig.len() != 64 {
+            return Err(CryptoError::InvalidSignature(
+                format!("Invalid Ed25519 signature size: {}", self.ed25519_sig.len())
+            ));
+        }
+
+        // Check algorithm consistency
+        if !self.is_valid_for_algorithm() {
+            return Err(CryptoError::InvalidSignature(
+                "Signature format inconsistent with algorithm".to_string()
+            ));
+        }
+
+        Ok(())
+    }
+
+    /// Check if signature has PQ component
+    pub fn has_pq_signature(&self) -> bool {
+        self.pq_sig.is_some()
+    }
+
+    /// Get PQ signature (returns None if not present)
+    pub fn pq_sig(&self) -> Option<&Vec<u8>> {
+        self.pq_sig.as_ref()
+    }
+
+    /// Get Ed25519 signature
+    pub fn ed25519_sig(&self) -> &[u8] {
+        &self.ed25519_sig
+    }
+
     /// Get expected size of this signature
     pub fn expected_size(&self) -> usize {
         self.algorithm.signature_size()
