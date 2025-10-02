@@ -11,20 +11,20 @@ A production-grade Rust library providing hybrid cryptographic primitives specif
 
 | Feature | Status | Progress |
 |---------|--------|----------|
-| 🏗️ Project Structure | ✅ Complete | Basic Cargo.toml, src/ layout |
-| 🔧 Core Types | ✅ Complete | AlgorithmId, HybridKeypair, HybridSignature |
-| 🧪 Unit Tests | 🔄 In Progress | Basic tests for core types |
-| 🔄 CI/CD | 🔄 Planned | GitHub Actions setup |
-| 🔐 MVP Crypto | 🔄 Planned | Ed25519 + ML-DSA hybrid signatures |
-| 📊 Test Coverage | 🔄 Planned | 50%+ unit & integration tests |
-| ⚡ Benchmarks | 🔄 Planned | Performance measurements |
-| 🏷️ Domain Separation | 🔄 Planned | TX/Block domain separation |
-| 🚨 Error Handling | ✅ Complete | Custom error types |
-| 📋 Policy Validation | 🔄 Planned | Classic/Hybrid/PQ-only policies |
-| 📦 Serialization | 🔄 Planned | CBOR format with versioning |
-| 🎲 Property Tests | 🔄 Planned | Proptest for invariants |
-| 📚 Documentation | 🔄 Planned | Doctests & examples |
-| 🔗 Blockchain Integration | 🔄 Planned | Substrate example |
+| 🏗️ Project Structure | ✅ Complete | Cargo.toml, src/, tests/, examples/, benches/ |
+| 🔧 Core Types | ✅ Complete | AlgorithmId, HybridKeypair, HybridSignature, CryptoError |
+| 🧪 Unit Tests | ✅ Complete | Comprehensive unit tests for all types |
+| 🔄 CI/CD | ✅ Complete | GitHub Actions with fmt/clippy/test/msrv/minimal-versions |
+| 🔐 MVP Crypto | ✅ Complete | Real Ed25519 + ML-DSA hybrid signatures |
+| 📊 Test Coverage | ✅ Complete | 50%+ with unit/integration/property-based tests |
+| ⚡ Benchmarks | ✅ Complete | Criterion benchmarks for all operations |
+| 🏷️ Domain Separation | ✅ Complete | TX/Block/Consensus domain separators |
+| 🚨 Error Handling | ✅ Complete | Custom error types with proper propagation |
+| 📋 Policy Validation | ✅ Complete | ClassicOnly/HybridPreferred/HybridRequired/PqOnly |
+| 📦 Serialization | ✅ Complete | CBOR format with versioning & round-trip validation |
+| 🎲 Property Tests | ✅ Complete | Proptest for cryptographic invariants |
+| 📚 Documentation | ✅ Complete | Doctests & comprehensive examples |
+| 🔗 Blockchain Integration | ✅ Complete | Substrate-compatible types & pallet example |
 
 ## Key Features
 
