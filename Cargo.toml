@@ -20,8 +20,8 @@ default = ["std"]
 std = []
 no_std = []
 # ed25519 = ["ed25519-dalek"]
-ml-dsa = []
-slh-dsa = []
+# ml-dsa = ["dep:ml-dsa"]
+# slh-dsa = ["dep:slh-dsa"]
 
 [dependencies]
 # Core cryptographic primitives (minimal for basic functionality)
@@ -32,9 +32,9 @@ slh-dsa = []
 # zeroize = { version = "1.7", features = ["zeroize_derive"] }
 
 # Post-quantum cryptography (NIST algorithms)
-# Note: Using mock implementation for now due to feature compatibility issues
-# pqcrypto = { version = "0.15", default-features = false, optional = true }
-# pqcrypto-traits = { version = "0.3", optional = true }
+# Note: Using mock implementations for now due to compatibility issues
+# ml-dsa = { version = "0.1.0-rc.0", optional = true }
+# slh-dsa = { version = "0.2.0-rc.0", optional = true }
 
 # Classic cryptography for hybrid approach (optional for minimal builds)
 # ed25519-dalek = { version = "2.1", default-features = false, optional = true }

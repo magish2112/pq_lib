@@ -70,7 +70,7 @@ impl HybridSigner {
     /// Sign with PQ algorithm using real PQC operations
     #[cfg(any(feature = "ml-dsa", feature = "slh-dsa"))]
     fn sign_pq(data: &[u8], private_key: &[u8], algorithm: AlgorithmId) -> CryptoResult<Vec<u8>> {
-        let pqc_ops = pqc::get_pqc_ops();
+        let pqc_ops = pqc::get_pqc_ops_for_algorithm(algorithm)?;
         let signature = pqc_ops.sign(data, private_key, algorithm)?;
         Ok(signature.signature)
     }
@@ -78,7 +78,7 @@ impl HybridSigner {
     /// Verify PQ signature using real PQC operations
     #[cfg(any(feature = "ml-dsa", feature = "slh-dsa"))]
     fn verify_pq(data: &[u8], signature: &[u8], public_key: &[u8], algorithm: AlgorithmId) -> CryptoResult<bool> {
-        let pqc_ops = pqc::get_pqc_ops();
+        let pqc_ops = pqc::get_pqc_ops_for_algorithm(algorithm)?;
         pqc_ops.verify(data, signature, public_key, algorithm)
     }
 
@@ -162,7 +162,7 @@ impl KeyGenerator for HybridSigner {
             }
 
             // Generate PQ keypair using real PQC operations
-            let pqc_ops = pqc::get_pqc_ops();
+            let pqc_ops = pqc::get_pqc_ops_for_algorithm(algorithm)?;
             let pq_keypair = pqc_ops.generate_keypair(algorithm)?;
 
             let public_key = HybridPublicKey::new(algorithm, ed25519_public, pq_keypair.public_key);

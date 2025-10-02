@@ -163,7 +163,7 @@ impl PqcOperations for MockPqcOps {
     }
 }
 
-/// Real PQC implementation using pqcrypto crate (when available)
+/// Real PQC implementation using dedicated ML-DSA and SLH-DSA crates
 #[cfg(feature = "ml-dsa")]
 pub struct RealPqcOps;
 
@@ -172,12 +172,12 @@ impl PqcOperations for RealPqcOps {
     fn generate_keypair(&self, algorithm: AlgorithmId) -> CryptoResult<PqcKeypair> {
         match algorithm {
             AlgorithmId::MlDsa65 => {
-                let (pk, sk) = pqcrypto::sign::ml_dsa_65::keypair();
-                Ok(PqcKeypair::new(algorithm, pk.to_vec(), sk.to_vec()))
+                let (pk, sk) = ml_dsa::ml_dsa_65::Keypair::generate();
+                Ok(PqcKeypair::new(algorithm, pk.into_bytes().to_vec(), sk.into_bytes().to_vec()))
             },
             AlgorithmId::MlDsa87 => {
-                let (pk, sk) = pqcrypto::sign::ml_dsa_87::keypair();
-                Ok(PqcKeypair::new(algorithm, pk.to_vec(), sk.to_vec()))
+                let (pk, sk) = ml_dsa::ml_dsa_87::Keypair::generate();
+                Ok(PqcKeypair::new(algorithm, pk.into_bytes().to_vec(), sk.into_bytes().to_vec()))
             },
             _ => Err("ML-DSA algorithms only supported in real implementation"),
         }
@@ -186,16 +186,16 @@ impl PqcOperations for RealPqcOps {
     fn sign(&self, data: &[u8], private_key: &[u8], algorithm: AlgorithmId) -> CryptoResult<PqcSignature> {
         match algorithm {
             AlgorithmId::MlDsa65 => {
-                let sk = pqcrypto::sign::ml_dsa_65::SecretKey::from_bytes(private_key)
+                let sk = ml_dsa::ml_dsa_65::SecretKey::try_from_bytes(private_key)
                     .map_err(|_| "Invalid private key")?;
-                let signature = pqcrypto::sign::ml_dsa_65::sign(data, &sk);
-                Ok(PqcSignature::new(algorithm, signature.to_vec()))
+                let signature = sk.sign(data);
+                Ok(PqcSignature::new(algorithm, signature.to_bytes().to_vec()))
             },
             AlgorithmId::MlDsa87 => {
-                let sk = pqcrypto::sign::ml_dsa_87::SecretKey::from_bytes(private_key)
+                let sk = ml_dsa::ml_dsa_87::SecretKey::try_from_bytes(private_key)
                     .map_err(|_| "Invalid private key")?;
-                let signature = pqcrypto::sign::ml_dsa_87::sign(data, &sk);
-                Ok(PqcSignature::new(algorithm, signature.to_vec()))
+                let signature = sk.sign(data);
+                Ok(PqcSignature::new(algorithm, signature.to_bytes().to_vec()))
             },
             _ => Err("ML-DSA algorithms only supported in real implementation"),
         }
@@ -204,31 +204,92 @@ impl PqcOperations for RealPqcOps {
     fn verify(&self, data: &[u8], signature: &[u8], public_key: &[u8], algorithm: AlgorithmId) -> CryptoResult<bool> {
         match algorithm {
             AlgorithmId::MlDsa65 => {
-                let pk = pqcrypto::sign::ml_dsa_65::PublicKey::from_bytes(public_key)
+                let pk = ml_dsa::ml_dsa_65::PublicKey::try_from_bytes(public_key)
                     .map_err(|_| "Invalid public key")?;
-                let sig = pqcrypto::sign::ml_dsa_65::Signature::from_bytes(signature)
+                let sig = ml_dsa::ml_dsa_65::Signature::try_from_bytes(signature)
                     .map_err(|_| "Invalid signature")?;
-                Ok(pqcrypto::sign::ml_dsa_65::verify(data, &sig, &pk))
+                Ok(pk.verify(data, &sig).is_ok())
             },
             AlgorithmId::MlDsa87 => {
-                let pk = pqcrypto::sign::ml_dsa_87::PublicKey::from_bytes(public_key)
+                let pk = ml_dsa::ml_dsa_87::PublicKey::try_from_bytes(public_key)
                     .map_err(|_| "Invalid public key")?;
-                let sig = pqcrypto::sign::ml_dsa_87::Signature::from_bytes(signature)
+                let sig = ml_dsa::ml_dsa_87::Signature::try_from_bytes(signature)
                     .map_err(|_| "Invalid signature")?;
-                Ok(pqcrypto::sign::ml_dsa_87::verify(data, &sig, &pk))
+                Ok(pk.verify(data, &sig).is_ok())
             },
             _ => Err("ML-DSA algorithms only supported in real implementation"),
         }
     }
 }
 
-/// Get the appropriate PQC operations implementation
+/// Real SLH-DSA implementation
+#[cfg(feature = "slh-dsa")]
+pub struct SlhDsaPqcOps;
+
+#[cfg(feature = "slh-dsa")]
+impl PqcOperations for SlhDsaPqcOps {
+    fn generate_keypair(&self, algorithm: AlgorithmId) -> CryptoResult<PqcKeypair> {
+        match algorithm {
+            AlgorithmId::SlhDsaShake256f => {
+                let (pk, sk) = slh_dsa::slh_dsa_shake_256f::Keypair::generate();
+                Ok(PqcKeypair::new(algorithm, pk.into_bytes().to_vec(), sk.into_bytes().to_vec()))
+            },
+            _ => Err("SLH-DSA algorithms only supported in real implementation"),
+        }
+    }
+
+    fn sign(&self, data: &[u8], private_key: &[u8], algorithm: AlgorithmId) -> CryptoResult<PqcSignature> {
+        match algorithm {
+            AlgorithmId::SlhDsaShake256f => {
+                let sk = slh_dsa::slh_dsa_shake_256f::SecretKey::try_from_bytes(private_key)
+                    .map_err(|_| "Invalid private key")?;
+                let signature = sk.sign(data);
+                Ok(PqcSignature::new(algorithm, signature.to_bytes().to_vec()))
+            },
+            _ => Err("SLH-DSA algorithms only supported in real implementation"),
+        }
+    }
+
+    fn verify(&self, data: &[u8], signature: &[u8], public_key: &[u8], algorithm: AlgorithmId) -> CryptoResult<bool> {
+        match algorithm {
+            AlgorithmId::SlhDsaShake256f => {
+                let pk = slh_dsa::slh_dsa_shake_256f::PublicKey::try_from_bytes(public_key)
+                    .map_err(|_| "Invalid public key")?;
+                let sig = slh_dsa::slh_dsa_shake_256f::Signature::try_from_bytes(signature)
+                    .map_err(|_| "Invalid signature")?;
+                Ok(pk.verify(data, &sig).is_ok())
+            },
+            _ => Err("SLH-DSA algorithms only supported in real implementation"),
+        }
+    }
+}
+
+/// Get the appropriate PQC operations implementation for the given algorithm
+pub fn get_pqc_ops_for_algorithm(algorithm: AlgorithmId) -> CryptoResult<Box<dyn PqcOperations>> {
+    match algorithm {
+        #[cfg(feature = "ml-dsa")]
+        AlgorithmId::MlDsa65 | AlgorithmId::MlDsa87 => {
+            Ok(Box::new(RealPqcOps))
+        },
+        #[cfg(feature = "slh-dsa")]
+        AlgorithmId::SlhDsaShake256f => {
+            Ok(Box::new(SlhDsaPqcOps))
+        },
+        _ => Ok(Box::new(MockPqcOps)), // Fallback to mock for unsupported algorithms
+    }
+}
+
+/// Get the default PQC operations implementation (ML-DSA if available, otherwise mock)
 pub fn get_pqc_ops() -> Box<dyn PqcOperations> {
     #[cfg(feature = "ml-dsa")]
     {
         Box::new(RealPqcOps)
     }
-    #[cfg(not(feature = "ml-dsa"))]
+    #[cfg(all(not(feature = "ml-dsa"), feature = "slh-dsa"))]
+    {
+        Box::new(SlhDsaPqcOps)
+    }
+    #[cfg(not(any(feature = "ml-dsa", feature = "slh-dsa")))]
     {
         Box::new(MockPqcOps)
     }
