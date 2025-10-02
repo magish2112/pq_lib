@@ -4,7 +4,7 @@ use core::fmt;
 
 use crate::{
     AlgorithmId, DomainSeparator, HybridKeypair, HybridPrivateKey, HybridPublicKey, HybridSignature,
-    KeyGenerator, Signer, Verifier, KemProvider, ValidationPolicy, CryptoResult, domain,
+    KeyGenerator, Signer, Verifier, KemProvider, ValidationPolicy, CryptoResult, domain, pqc,
 };
 
 #[cfg(feature = "ed25519")]
@@ -67,23 +67,40 @@ impl HybridSigner {
         Ok(signature == expected.as_slice())
     }
 
-    /// Sign with PQ algorithm (mock implementation)
+    /// Sign with PQ algorithm using real PQC operations
     #[cfg(any(feature = "ml-dsa", feature = "slh-dsa"))]
-    fn sign_pq(data: &[u8], _private_key: &[u8], algorithm: AlgorithmId) -> Vec<u8> {
+    fn sign_pq(data: &[u8], private_key: &[u8], algorithm: AlgorithmId) -> CryptoResult<Vec<u8>> {
+        let pqc_ops = pqc::get_pqc_ops();
+        let signature = pqc_ops.sign(data, private_key, algorithm)?;
+        Ok(signature.signature)
+    }
+
+    /// Verify PQ signature using real PQC operations
+    #[cfg(any(feature = "ml-dsa", feature = "slh-dsa"))]
+    fn verify_pq(data: &[u8], signature: &[u8], public_key: &[u8], algorithm: AlgorithmId) -> CryptoResult<bool> {
+        let pqc_ops = pqc::get_pqc_ops();
+        pqc_ops.verify(data, signature, public_key, algorithm)
+    }
+
+    /// Sign with PQ algorithm (fallback for no_std)
+    #[cfg(not(any(feature = "ml-dsa", feature = "slh-dsa")))]
+    fn sign_pq(data: &[u8], _private_key: &[u8], algorithm: AlgorithmId) -> CryptoResult<Vec<u8>> {
+        use sha3::{Digest, Sha3_256};
         let mut hasher = Sha3_256::new();
         hasher.update(data);
         hasher.update(&[algorithm as u8]);
-        hasher.finalize().to_vec()
+        Ok(hasher.finalize().to_vec())
     }
 
-    /// Verify PQ signature (mock implementation)
-    #[cfg(any(feature = "ml-dsa", feature = "slh-dsa"))]
-    fn verify_pq(data: &[u8], signature: &[u8], _public_key: &[u8], algorithm: AlgorithmId) -> bool {
+    /// Verify PQ signature (fallback for no_std)
+    #[cfg(not(any(feature = "ml-dsa", feature = "slh-dsa")))]
+    fn verify_pq(data: &[u8], signature: &[u8], _public_key: &[u8], algorithm: AlgorithmId) -> CryptoResult<bool> {
+        use sha3::{Digest, Sha3_256};
         let mut hasher = Sha3_256::new();
         hasher.update(data);
         hasher.update(&[algorithm as u8]);
         let expected = hasher.finalize();
-        signature == expected.as_slice()
+        Ok(signature == expected.as_slice())
     }
 }
 
@@ -144,19 +161,12 @@ impl KeyGenerator for HybridSigner {
                 return Ok(HybridKeypair::new(public_key, private_key));
             }
 
-            // Generate PQ keypair (mock implementation for now)
-            let pq_key_size = match algorithm {
-                AlgorithmId::MlDsa65 => 64,
-                AlgorithmId::MlDsa87 => 64,
-                AlgorithmId::SlhDsaShake256f => 32,
-                AlgorithmId::Ed25519 => unreachable!(),
-            };
+            // Generate PQ keypair using real PQC operations
+            let pqc_ops = pqc::get_pqc_ops();
+            let pq_keypair = pqc_ops.generate_keypair(algorithm)?;
 
-            let mut pq_secret = vec![0u8; pq_key_size];
-            rand::fill(&mut pq_secret);
-
-            let public_key = HybridPublicKey::new(algorithm, ed25519_public, pq_secret.clone());
-            let private_key = HybridPrivateKey::new(algorithm, ed25519_private, pq_secret);
+            let public_key = HybridPublicKey::new(algorithm, ed25519_public, pq_keypair.public_key);
+            let private_key = HybridPrivateKey::new(algorithm, ed25519_private, pq_keypair.private_key);
 
             Ok(HybridKeypair::new(public_key, private_key))
         }

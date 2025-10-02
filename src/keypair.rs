@@ -80,25 +80,41 @@ pub struct HybridPublicKey {
 impl HybridPublicKey {
     /// Create Ed25519-only public key
     pub fn from_ed25519(ed25519_key: Vec<u8>) -> Self {
-        Self {
-            algorithm: AlgorithmId::Ed25519,
-            ed25519_key,
-            pq_key: None,
-        }
+        Self::new(AlgorithmId::Ed25519, ed25519_key, None)
     }
 
     /// Create hybrid public key
-    pub fn new(algorithm: AlgorithmId, ed25519_key: Vec<u8>, pq_key: Vec<u8>) -> Self {
+    pub fn new(algorithm: AlgorithmId, ed25519_key: Vec<u8>, pq_key: Option<Vec<u8>>) -> Self {
         Self {
             algorithm,
             ed25519_key,
-            pq_key: Some(pq_key),
+            pq_key,
         }
+    }
+
+    /// Create hybrid public key with PQ component
+    pub fn with_pq(algorithm: AlgorithmId, ed25519_key: Vec<u8>, pq_key: Vec<u8>) -> Self {
+        Self::new(algorithm, ed25519_key, Some(pq_key))
     }
 
     /// Get the expected size of this public key
     pub fn expected_size(&self) -> usize {
         self.algorithm.public_key_size()
+    }
+
+    /// Check if public key has PQ component
+    pub fn has_pq_key(&self) -> bool {
+        self.pq_key.is_some()
+    }
+
+    /// Get PQ key (returns None if not present)
+    pub fn pq_key(&self) -> Option<&Vec<u8>> {
+        self.pq_key.as_ref()
+    }
+
+    /// Get Ed25519 public key
+    pub fn ed25519_key(&self) -> &[u8] {
+        &self.ed25519_key
     }
 }
 

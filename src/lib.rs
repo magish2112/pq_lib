@@ -61,26 +61,20 @@ extern crate alloc;
 #[cfg(not(feature = "std"))]
 use alloc::{format, vec::Vec};
 
-#[cfg(feature = "std")]
-use std::fmt;
-
-#[cfg(not(feature = "std"))]
 use core::fmt;
 
-/// Core cryptographic error types
-pub mod error;
+#[cfg(feature = "std")]
+extern crate std;
+
 /// Algorithm identifiers and properties
 pub mod algorithm;
-/// Keypair types
-pub mod keypair;
-/// Signature types
-pub mod signature;
+/// Post-quantum cryptography operations
+pub mod pqc;
 
 /// Result type for cryptographic operations
 ///
-/// This is a type alias for `Result<T, CryptoError>` that makes error handling
-/// more convenient throughout the library.
-pub type CryptoResult<T> = Result<T, error::CryptoError>;
+/// This is a type alias for `Result<T, &'static str>` for basic error handling.
+pub type CryptoResult<T> = Result<T, &'static str>;
 
 /// Version information for the pq_lib crate
 ///
@@ -100,20 +94,5 @@ pub mod version {
     pub const RUST_VERSION: &str = "1.70";
 }
 
-/// Re-export commonly used types and traits for convenience
-///
-/// These re-exports reduce the need for users to import from sub-modules
-/// when using the most common functionality.
-pub use async_trait::async_trait;
-
-/// Error types for cryptographic operations
-pub use error::CryptoError;
-
 /// Algorithm identifiers for supported cryptographic schemes
 pub use algorithm::AlgorithmId;
-
-/// Hybrid keypair containing both classical and post-quantum keys
-pub use keypair::{HybridKeypair, HybridPublicKey, HybridPrivateKey};
-
-/// Hybrid signature supporting both classical and post-quantum algorithms
-pub use signature::HybridSignature;

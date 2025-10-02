@@ -94,32 +94,62 @@ impl MigrationConfig {
     }
 
     /// Check if migration should be enforced
+    ///
+    /// In std environments, uses system time. In no_std environments,
+    /// requires external time source via `current_time` parameter.
     pub fn should_enforce_target(&self) -> bool {
+        self.should_enforce_target_with_time(None)
+    }
+
+    /// Check if migration should be enforced with custom time source
+    ///
+    /// # Arguments
+    ///
+    /// * `current_time` - Optional current Unix timestamp. If None, uses system time in std environments.
+    pub fn should_enforce_target_with_time(&self, current_time: Option<u64>) -> bool {
         if !self.migration_active {
             return false;
         }
 
         if let Some(deadline) = self.deadline {
-            #[cfg(feature = "std")]
-            {
-                let now = std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap_or_default()
-                    .as_secs();
-                now >= deadline
-            }
-            #[cfg(not(feature = "std"))]
-            {
-                false // Can't check time without std
-            }
+            let now = current_time.unwrap_or_else(|| {
+                #[cfg(feature = "std")]
+                {
+                    std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .unwrap_or_default()
+                        .as_secs()
+                }
+                #[cfg(not(feature = "std"))]
+                {
+                    // In no_std, we can't get current time without external source
+                    // Return false to maintain conservative behavior
+                    return false;
+                }
+            });
+
+            now >= deadline
         } else {
             false
         }
     }
 
     /// Get effective policy based on migration status
+    ///
+    /// # Arguments
+    ///
+    /// * `current_time` - Optional current Unix timestamp for time-based migration checks
     pub fn effective_policy(&self) -> ValidationPolicy {
-        if self.should_enforce_target() {
+        self.effective_policy_with_time(None)
+    }
+
+    /// Get effective policy based on migration status with custom time source
+    ///
+    /// # Arguments
+    ///
+    /// * `current_time` - Optional current Unix timestamp. If None, uses system time in std environments.
+    pub fn effective_policy_with_time(&self, current_time: Option<u64>) -> ValidationPolicy {
+        if self.should_enforce_target_with_time(current_time) {
             self.target_policy
         } else {
             self.current_policy

@@ -1,19 +1,78 @@
 //! Algorithm identifiers and properties
+//!
+//! This module defines the supported cryptographic algorithms and their properties.
+//! It provides a unified interface for working with different signature schemes
+//! including classical Ed25519 and post-quantum algorithms like ML-DSA and SLH-DSA.
 
 use core::fmt;
 
-/// Supported cryptographic algorithms
+/// Basic error type for the minimal version
+#[derive(Debug, Clone)]
+pub struct CryptoError {
+    message: &'static str,
+}
+
+impl CryptoError {
+    /// Creates a new cryptographic error with the specified message
+    pub fn new(message: &'static str) -> Self {
+        Self { message }
+    }
+}
+
+impl fmt::Display for CryptoError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.message)
+    }
+}
+
+/// Supported cryptographic algorithms for hybrid signatures
+///
+/// This enum defines the available algorithms that can be used for creating
+/// hybrid signatures combining classical and post-quantum cryptography.
+///
+/// # Security Levels
+///
+/// - **Ed25519**: ~128-bit security (classical)
+/// - **ML-DSA-65**: Category 3 (192-bit security)
+/// - **ML-DSA-87**: Category 5 (256-bit security)
+/// - **SLH-DSA**: Category 5 (256-bit security)
+///
+/// # Examples
+///
+/// ```rust
+/// use pq_lib::AlgorithmId;
+///
+/// // Check if an algorithm is post-quantum
+/// assert!(!AlgorithmId::Ed25519.is_post_quantum());
+/// assert!(AlgorithmId::MlDsa65.is_post_quantum());
+///
+/// // Get algorithm properties
+/// assert_eq!(AlgorithmId::Ed25519.signature_size(), 64);
+/// assert_eq!(AlgorithmId::MlDsa65.public_key_size(), 32 + 1952);
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde-support", derive(serde::Serialize, serde::Deserialize))]
 #[repr(u8)]
 pub enum AlgorithmId {
     /// Ed25519 only (backward compatibility)
+    ///
+    /// Provides classical 128-bit security using the Ed25519 signature scheme.
+    /// Used primarily for compatibility with existing systems.
     Ed25519 = 0,
     /// ML-DSA-65 + Ed25519 hybrid
+    ///
+    /// Combines Ed25519 (128-bit) with ML-DSA-65 (192-bit security).
+    /// Provides 192-bit security level according to NIST categories.
     MlDsa65 = 1,
     /// ML-DSA-87 + Ed25519 hybrid (stronger security)
+    ///
+    /// Combines Ed25519 (128-bit) with ML-DSA-87 (256-bit security).
+    /// Provides maximum 256-bit security level for long-term protection.
     MlDsa87 = 2,
     /// SLH-DSA + Ed25519 hybrid (maximum long-term security)
+    ///
+    /// Combines Ed25519 (128-bit) with SLH-DSA (256-bit security).
+    /// Provides maximum security for ultra-long-term protection.
     SlhDsaShake256f = 3,
 }
 
