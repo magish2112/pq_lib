@@ -77,23 +77,43 @@ pub mod keypair;
 pub mod signature;
 
 /// Result type for cryptographic operations
+///
+/// This is a type alias for `Result<T, CryptoError>` that makes error handling
+/// more convenient throughout the library.
 pub type CryptoResult<T> = Result<T, error::CryptoError>;
 
-/// Version information
+/// Version information for the pq_lib crate
+///
+/// Provides compile-time version information and compatibility checks.
 pub mod version {
-    /// Current crate version
+    /// Current crate version as specified in Cargo.toml
     pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-    /// Supported algorithm versions
+    /// Supported algorithm versions for compatibility checking
+    ///
+    /// Currently supports version "v1" of the cryptographic protocol.
     pub const ALGORITHM_VERSIONS: &[&str] = &["v1"];
 
-    /// Minimum supported Rust version
+    /// Minimum supported Rust version for this crate
+    ///
+    /// The crate requires Rust 1.70.0 or later for full functionality.
     pub const RUST_VERSION: &str = "1.70";
 }
 
-/// Re-exported for convenience
+/// Re-export commonly used types and traits for convenience
+///
+/// These re-exports reduce the need for users to import from sub-modules
+/// when using the most common functionality.
 pub use async_trait::async_trait;
+
+/// Error types for cryptographic operations
 pub use error::CryptoError;
+
+/// Algorithm identifiers for supported cryptographic schemes
 pub use algorithm::AlgorithmId;
+
+/// Hybrid keypair containing both classical and post-quantum keys
 pub use keypair::{HybridKeypair, HybridPublicKey, HybridPrivateKey};
+
+/// Hybrid signature supporting both classical and post-quantum algorithms
 pub use signature::HybridSignature;

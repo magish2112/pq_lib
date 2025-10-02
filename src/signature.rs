@@ -3,18 +3,51 @@
 use core::fmt;
 use crate::{AlgorithmId, CryptoResult};
 
-/// Hybrid cryptographic signature with versioning
+/// A hybrid cryptographic signature supporting both classical and post-quantum algorithms.
+///
+/// This structure represents a digital signature that can contain both Ed25519
+/// (classical) and post-quantum algorithm components. The signature includes
+/// versioning for backward compatibility and domain separation for security.
+///
+/// # Structure
+///
+/// - `version`: Format version for backward compatibility
+/// - `algorithm`: The cryptographic algorithm used
+/// - `ed25519_sig`: Ed25519 signature component (always present)
+/// - `pq_sig`: Post-quantum signature component (optional)
+/// - `domain`: Domain separator used during signing
+///
+/// # Security Features
+///
+/// - **Domain Separation**: Prevents signature reuse across different contexts
+/// - **Versioning**: Enables backward compatibility during upgrades
+/// - **Hybrid Design**: Combines classical and post-quantum security
+///
+/// # Examples
+///
+/// ```rust
+/// use pq_lib::{HybridSignature, AlgorithmId, DomainSeparator};
+///
+/// let ed25519_sig = vec![0u8; 64]; // 64-byte Ed25519 signature
+/// let signature = HybridSignature::ed25519_only(ed25519_sig);
+///
+/// assert_eq!(signature.algorithm, AlgorithmId::Ed25519);
+/// assert!(signature.pq_sig.is_none());
+/// assert!(signature.is_valid_for_algorithm());
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde-support", derive(serde::Serialize, serde::Deserialize))]
 pub struct HybridSignature {
-    /// Format version for backward compatibility
+    /// Format version for backward compatibility and future extensibility
     pub version: u8,
-    /// Algorithm identifier
+    /// The cryptographic algorithm used for this signature
     pub algorithm: AlgorithmId,
-    /// Ed25519 signature (always present)
+    /// The Ed25519 signature component (always present for compatibility)
     pub ed25519_sig: Vec<u8>,
-    /// Post-quantum signature (optional)
+    /// The post-quantum signature component (optional, depends on algorithm)
     pub pq_sig: Option<Vec<u8>>,
+    /// Domain separator used during signing to prevent cross-protocol attacks
+    pub domain: crate::DomainSeparator,
 }
 
 impl HybridSignature {

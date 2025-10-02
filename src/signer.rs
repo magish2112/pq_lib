@@ -89,6 +89,37 @@ impl HybridSigner {
 
 #[async_trait::async_trait]
 impl KeyGenerator for HybridSigner {
+    /// Generates a new hybrid keypair for the specified algorithm.
+    ///
+    /// This function creates a cryptographically secure keypair that combines
+    /// Ed25519 (classical) and post-quantum algorithms for maximum security
+    /// and forward compatibility.
+    ///
+    /// # Arguments
+    ///
+    /// * `algorithm` - The post-quantum algorithm to use alongside Ed25519
+    ///
+    /// # Returns
+    ///
+    /// A `CryptoResult` containing the generated `HybridKeypair`
+    ///
+    /// # Errors
+    ///
+    /// Returns `CryptoError::UnsupportedAlgorithm` if the algorithm is not
+    /// available with the current feature flags.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use pq_lib::{HybridSigner, AlgorithmId};
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let keypair = HybridSigner::generate_keypair(AlgorithmId::MlDsa65)
+    ///         .await
+    ///         .unwrap();
+    /// }
+    /// ```
     async fn generate_keypair(algorithm: AlgorithmId) -> CryptoResult<HybridKeypair> {
         if !algorithm.is_available() {
             return Err(crate::CryptoError::UnsupportedAlgorithm(algorithm.to_string()));
@@ -162,6 +193,47 @@ impl KeyGenerator for HybridSigner {
 
 #[async_trait::async_trait]
 impl Signer for HybridSigner {
+    /// Signs data using a hybrid cryptographic scheme with domain separation.
+    ///
+    /// This function creates a signature that combines Ed25519 (classical) and
+    /// post-quantum algorithms, providing both current security and future-proofing
+    /// against quantum attacks. The domain separation ensures signatures cannot
+    /// be reused across different contexts.
+    ///
+    /// # Arguments
+    ///
+    /// * `data` - The data to be signed
+    /// * `private_key` - The private key to use for signing
+    /// * `domain` - The domain separator to prevent cross-protocol attacks
+    ///
+    /// # Returns
+    ///
+    /// A `CryptoResult` containing the `HybridSignature`
+    ///
+    /// # Errors
+    ///
+    /// Returns `CryptoError` if signing fails or if the algorithm is not supported.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use pq_lib::{HybridSigner, AlgorithmId, DomainSeparator};
+    ///
+    /// #[tokio::main]
+    /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let keypair = HybridSigner::generate_keypair(AlgorithmId::MlDsa65).await?;
+    ///     let data = b"transaction data";
+    ///
+    ///     let signature = HybridSigner::sign_with_domain(
+    ///         data,
+    ///         &keypair.private_key,
+    ///         DomainSeparator::Transaction
+    ///     ).await?;
+    ///
+    ///     println!("Signature created successfully");
+    ///     Ok(())
+    /// }
+    /// ```
     async fn sign_with_domain(
         data: &[u8],
         private_key: &HybridPrivateKey,
@@ -193,6 +265,55 @@ impl Signer for HybridSigner {
 
 #[async_trait::async_trait]
 impl Verifier for HybridSigner {
+    /// Verifies a signature against data using a specified validation policy.
+    ///
+    /// This function performs signature verification with policy-based validation,
+    /// allowing for gradual migration from classical to post-quantum cryptography.
+    /// The policy determines which signature components must be present and valid.
+    ///
+    /// # Arguments
+    ///
+    /// * `data` - The original data that was signed
+    /// * `signature` - The signature to verify
+    /// * `public_key` - The public key corresponding to the private key used for signing
+    /// * `policy` - The validation policy to apply
+    ///
+    /// # Returns
+    ///
+    /// A `CryptoResult` containing `true` if the signature is valid according to the policy
+    ///
+    /// # Errors
+    ///
+    /// Returns `CryptoError` if verification fails or if the policy is violated.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use pq_lib::{HybridSigner, AlgorithmId, ValidationPolicy, DomainSeparator};
+    ///
+    /// #[tokio::main]
+    /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let keypair = HybridSigner::generate_keypair(AlgorithmId::MlDsa65).await?;
+    ///     let data = b"transaction data";
+    ///
+    ///     let signature = HybridSigner::sign_with_domain(
+    ///         data,
+    ///         &keypair.private_key,
+    ///         DomainSeparator::Transaction
+    ///     ).await?;
+    ///
+    ///     // Verify with hybrid-required policy
+    ///     let is_valid = HybridSigner::verify_with_policy(
+    ///         data,
+    ///         &signature,
+    ///         &keypair.public_key,
+    ///         ValidationPolicy::HybridRequired
+    ///     ).await?;
+    ///
+    ///     assert!(is_valid);
+    ///     Ok(())
+    /// }
+    /// ```
     async fn verify_with_policy(
         data: &[u8],
         signature: &HybridSignature,

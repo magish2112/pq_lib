@@ -3,13 +3,34 @@
 use core::fmt;
 use crate::{AlgorithmId, CryptoResult};
 
-/// Hybrid cryptographic keypair
+/// A hybrid cryptographic keypair combining classical and post-quantum keys.
+///
+/// This structure holds both the public and private components of a hybrid
+/// cryptographic keypair. The keypair supports various algorithms including
+/// Ed25519 (classical) and ML-DSA/SLH-DSA (post-quantum) for maximum security
+/// and forward compatibility.
+///
+/// # Examples
+///
+/// ```rust
+/// use pq_lib::{HybridSigner, AlgorithmId};
+///
+/// #[tokio::main]
+/// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+///     let keypair = HybridSigner::generate_keypair(AlgorithmId::MlDsa65).await?;
+///
+///     println!("Public key algorithm: {}", keypair.public_key.algorithm);
+///     println!("Private key algorithm: {}", keypair.private_key.algorithm);
+///
+///     Ok(())
+/// }
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde-support", derive(serde::Serialize, serde::Deserialize))]
 pub struct HybridKeypair {
-    /// Public key
+    /// The public key component of the keypair
     pub public_key: HybridPublicKey,
-    /// Private key
+    /// The private key component of the keypair
     pub private_key: HybridPrivateKey,
 }
 
@@ -23,15 +44,36 @@ impl HybridKeypair {
     }
 }
 
-/// Hybrid public key
+/// A hybrid public key containing both classical and post-quantum components.
+///
+/// This structure represents a public key that can contain both Ed25519
+/// (classical) and post-quantum algorithm components. The presence of
+/// post-quantum components depends on the algorithm used.
+///
+/// # Security Considerations
+///
+/// The public key is safe to share and store publicly. It contains no
+/// sensitive information and can be freely distributed.
+///
+/// # Examples
+///
+/// ```rust
+/// use pq_lib::{HybridPublicKey, AlgorithmId};
+///
+/// let ed25519_key = vec![0u8; 32]; // 32-byte Ed25519 public key
+/// let public_key = HybridPublicKey::from_ed25519(ed25519_key);
+///
+/// assert_eq!(public_key.algorithm, AlgorithmId::Ed25519);
+/// assert!(public_key.pq_key.is_none());
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde-support", derive(serde::Serialize, serde::Deserialize))]
 pub struct HybridPublicKey {
-    /// Algorithm identifier
+    /// The cryptographic algorithm this key is designed for
     pub algorithm: AlgorithmId,
-    /// Ed25519 public key
+    /// The Ed25519 public key component (always present)
     pub ed25519_key: Vec<u8>,
-    /// Post-quantum public key (optional)
+    /// The post-quantum public key component (optional, depends on algorithm)
     pub pq_key: Option<Vec<u8>>,
 }
 
@@ -60,15 +102,38 @@ impl HybridPublicKey {
     }
 }
 
-/// Hybrid private key with zeroization
+/// A hybrid private key with automatic memory zeroization for security.
+///
+/// This structure represents a private key that can contain both Ed25519
+/// (classical) and post-quantum algorithm components. The key is designed
+/// to be used for signing operations and includes automatic zeroization
+/// of sensitive data when dropped.
+///
+/// # Security Considerations
+///
+/// **⚠️ CRITICAL:** Never store, log, or transmit private keys. They contain
+/// sensitive cryptographic material that could compromise security if exposed.
+/// The key implements automatic zeroization on drop for memory safety.
+///
+/// # Examples
+///
+/// ```rust
+/// use pq_lib::{HybridPrivateKey, AlgorithmId};
+///
+/// let ed25519_key = vec![0u8; 32]; // 32-byte Ed25519 private key
+/// let private_key = HybridPrivateKey::from_ed25519(ed25519_key);
+///
+/// assert_eq!(private_key.algorithm, AlgorithmId::Ed25519);
+/// assert!(private_key.pq_key.is_none());
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde-support", derive(serde::Serialize, serde::Deserialize))]
 pub struct HybridPrivateKey {
-    /// Algorithm identifier
+    /// The cryptographic algorithm this key is designed for
     pub algorithm: AlgorithmId,
-    /// Ed25519 private key
+    /// The Ed25519 private key component (always present)
     pub ed25519_key: Vec<u8>,
-    /// Post-quantum private key (optional)
+    /// The post-quantum private key component (optional, depends on algorithm)
     pub pq_key: Option<Vec<u8>>,
 }
 
