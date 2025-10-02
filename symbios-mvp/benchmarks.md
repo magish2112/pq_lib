@@ -198,7 +198,7 @@ Get-Content benchmarks/run_tps_demo.txt
 
 ---
 
-*Benchmarks last updated: December 2024*
+*Benchmarks last updated: October 2025*
 *Security audit completed: All critical issues addressed*
 *Environment: Windows 10, Intel i7-9750H, 32GB RAM*
 *Note: Research benchmarks with security hardening applied*
