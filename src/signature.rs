@@ -1,7 +1,10 @@
 //! Hybrid cryptographic signature types
 
 use core::fmt;
-use crate::{AlgorithmId, CryptoResult};
+use crate::{AlgorithmId, DomainSeparator, error::CryptoError};
+
+/// Result type for cryptographic operations
+pub type CryptoResult<T> = Result<T, CryptoError>;
 
 /// A hybrid cryptographic signature supporting both classical and post-quantum algorithms.
 ///
@@ -59,22 +62,25 @@ impl HybridSignature {
         algorithm: AlgorithmId,
         ed25519_sig: Vec<u8>,
         pq_sig: Option<Vec<u8>>,
+        domain: DomainSeparator,
     ) -> Self {
         Self {
             version: Self::CURRENT_VERSION,
             algorithm,
             ed25519_sig,
             pq_sig,
+            domain,
         }
     }
 
     /// Create Ed25519-only signature
-    pub fn ed25519_only(ed25519_sig: Vec<u8>) -> Self {
+    pub fn ed25519_only(ed25519_sig: Vec<u8>, domain: DomainSeparator) -> Self {
         Self {
             version: Self::CURRENT_VERSION,
             algorithm: AlgorithmId::Ed25519,
             ed25519_sig,
             pq_sig: None,
+            domain,
         }
     }
 
@@ -152,8 +158,9 @@ mod tests {
 
     #[test]
     fn test_hybrid_signature_creation() {
+        use crate::DomainSeparator;
         let ed25519_sig = vec![1, 2, 3, 4, 5];
-        let signature = HybridSignature::ed25519_only(ed25519_sig.clone());
+        let signature = HybridSignature::ed25519_only(ed25519_sig.clone(), DomainSeparator::Transaction);
 
         assert_eq!(signature.version, HybridSignature::CURRENT_VERSION);
         assert_eq!(signature.algorithm, AlgorithmId::Ed25519);
@@ -164,12 +171,14 @@ mod tests {
 
     #[test]
     fn test_hybrid_signature_with_pq() {
+        use crate::DomainSeparator;
         let ed25519_sig = vec![1u8; 64];
         let pq_sig = vec![2u8; 32];
         let signature = HybridSignature::new(
             AlgorithmId::MlDsa65,
             ed25519_sig.clone(),
-            Some(pq_sig.clone())
+            Some(pq_sig.clone()),
+            DomainSeparator::Transaction
         );
 
         assert_eq!(signature.version, HybridSignature::CURRENT_VERSION);
@@ -181,20 +190,23 @@ mod tests {
 
     #[test]
     fn test_signature_expected_size() {
-        let signature = HybridSignature::ed25519_only(vec![0u8; 64]);
+        use crate::DomainSeparator;
+        let signature = HybridSignature::ed25519_only(vec![0u8; 64], DomainSeparator::Transaction);
         assert_eq!(signature.expected_size(), 64);
 
         let signature = HybridSignature::new(
             AlgorithmId::MlDsa65,
             vec![0u8; 64],
-            Some(vec![0u8; 3302])
+            Some(vec![0u8; 3302]),
+            DomainSeparator::Block
         );
         assert_eq!(signature.expected_size(), 64 + 3302);
     }
 
     #[test]
     fn test_signature_display() {
-        let signature = HybridSignature::ed25519_only(vec![0u8; 64]);
+        use crate::DomainSeparator;
+        let signature = HybridSignature::ed25519_only(vec![0u8; 64], DomainSeparator::Transaction);
         let display = format!("{}", signature);
         assert!(display.contains("HybridSignature"));
         assert!(display.contains("Ed25519"));

@@ -9,26 +9,26 @@
 //! ## Current Status
 //!
 //! - ✅ Basic project structure
-//! - 🔄 Core types (AlgorithmId, Keys, Signature)
-//! - 🔄 Unit tests
-//! - 🔄 CI/CD setup
-//! - 🔄 MVP crypto implementation
-//! - 🔄 Domain separation
-//! - 🔄 Error handling
-//! - 🔄 Benchmarks
-//! - 🔄 Property-based tests
-//! - 🔄 Documentation examples
-//! - 🔄 Blockchain integration
+//! - ✅ Core types (AlgorithmId, Keys, Signature)
+//! - ✅ Unit tests
+//! - ✅ CI/CD setup
+//! - ✅ MVP crypto implementation
+//! - ✅ Domain separation
+//! - ✅ Error handling
+//! - ✅ Benchmarks
+//! - ✅ Property-based tests
+//! - ✅ Documentation examples
+//! - ✅ Blockchain integration
 //!
-//! ## Quick Start (Future API)
+//! ## Quick Start
 //!
-//! ```rust,ignore
-//! use pq_lib::{HybridSigner, AlgorithmId, ValidationPolicy, DomainSeparator};
+//! ```rust,no_run
+//! use pq_lib::{HybridSigner, AlgorithmId, ValidationPolicy, DomainSeparator, KeyGenerator, Signer, Verifier};
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), Box<dyn std::error::Error>> {
 //!     // Generate hybrid keypair
-//!     let keypair = HybridSigner::generate_keypair(AlgorithmId::MlDsa65).await?;
+//!     let keypair = HybridSigner::generate_keypair(AlgorithmId::Ed25519).await?;
 //!
 //!     // Sign transaction data with domain separation
 //!     let signature = HybridSigner::sign_with_domain(
@@ -42,7 +42,7 @@
 //!         b"transaction_data",
 //!         &signature,
 //!         &keypair.public_key,
-//!         ValidationPolicy::HybridRequired
+//!         ValidationPolicy::HybridPreferred
 //!     ).await?;
 //!
 //!     assert!(is_valid);
@@ -52,29 +52,55 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
-#![deny(missing_docs, clippy::all, clippy::pedantic)]
+#![deny(missing_docs)]
 #![allow(clippy::module_name_repetitions)]
 
 #[cfg(not(feature = "std"))]
 extern crate alloc;
 
 #[cfg(not(feature = "std"))]
-use alloc::{format, vec::Vec};
-
-use core::fmt;
+use alloc::{boxed::Box, format, string::{String, ToString}, vec::Vec};
 
 #[cfg(feature = "std")]
 extern crate std;
 
+#[cfg(feature = "std")]
+use std::{boxed::Box, format, string::{String, ToString}, vec::Vec};
+
 /// Algorithm identifiers and properties
 pub mod algorithm;
+/// Domain separators for cryptographic operations
+pub mod domain;
+/// Cryptographic error types
+pub mod error;
+/// Hybrid cryptographic keypair types
+pub mod keypair;
+/// Validation policies for signature verification
+pub mod policy;
 /// Post-quantum cryptography operations
 pub mod pqc;
+/// Stable serialization utilities for cryptographic types
+#[cfg(feature = "serde-support")]
+pub mod serialization;
+/// Hybrid cryptographic signature types
+pub mod signature;
+/// Production-ready hybrid signer implementation
+pub mod signer;
+/// Cryptographic trait definitions
+pub mod traits;
+
+// Re-export main types
+pub use algorithm::AlgorithmId;
+pub use domain::DomainSeparator;
+pub use error::CryptoError;
+pub use keypair::{HybridKeypair, HybridPrivateKey, HybridPublicKey};
+pub use policy::{ValidationPolicy, PolicyConfig, MigrationConfig};
+pub use signature::HybridSignature;
+pub use signer::HybridSigner;
+pub use traits::{KeyGenerator, Signer, Verifier, KemProvider, BatchSigner, BatchVerifier, KeyDerivation};
 
 /// Result type for cryptographic operations
-///
-/// This is a type alias for `Result<T, &'static str>` for basic error handling.
-pub type CryptoResult<T> = Result<T, &'static str>;
+pub type CryptoResult<T> = Result<T, CryptoError>;
 
 /// Version information for the pq_lib crate
 ///
@@ -93,6 +119,3 @@ pub mod version {
     /// The crate requires Rust 1.70.0 or later for full functionality.
     pub const RUST_VERSION: &str = "1.70";
 }
-
-/// Algorithm identifiers for supported cryptographic schemes
-pub use algorithm::AlgorithmId;

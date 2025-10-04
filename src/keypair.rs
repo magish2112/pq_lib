@@ -1,7 +1,12 @@
 //! Hybrid cryptographic keypair types
 
-use core::fmt;
-use crate::{AlgorithmId, CryptoResult};
+#[cfg(not(feature = "std"))]
+use alloc::{vec::Vec};
+
+#[cfg(feature = "std")]
+use std::vec::Vec;
+
+use crate::AlgorithmId;
 
 /// A hybrid cryptographic keypair combining classical and post-quantum keys.
 ///
@@ -80,10 +85,14 @@ pub struct HybridPublicKey {
 impl HybridPublicKey {
     /// Create Ed25519-only public key
     pub fn from_ed25519(ed25519_key: Vec<u8>) -> Self {
-        Self::new(AlgorithmId::Ed25519, ed25519_key, None)
+        Self {
+            algorithm: AlgorithmId::Ed25519,
+            ed25519_key,
+            pq_key: None,
+        }
     }
 
-    /// Create hybrid public key
+    /// Create hybrid public key with optional PQ component
     pub fn new(algorithm: AlgorithmId, ed25519_key: Vec<u8>, pq_key: Option<Vec<u8>>) -> Self {
         Self {
             algorithm,
@@ -183,41 +192,6 @@ impl HybridPrivateKey {
     }
 
     /// Get Ed25519 private key
-    pub fn ed25519_key(&self) -> &[u8] {
-        &self.ed25519_key
-    }
-}
-
-impl HybridPublicKey {
-    /// Create Ed25519-only public key
-    pub fn from_ed25519(ed25519_key: Vec<u8>) -> Self {
-        Self {
-            algorithm: AlgorithmId::Ed25519,
-            ed25519_key,
-            pq_key: None,
-        }
-    }
-
-    /// Create hybrid public key
-    pub fn new(algorithm: AlgorithmId, ed25519_key: Vec<u8>, pq_key: Vec<u8>) -> Self {
-        Self {
-            algorithm,
-            ed25519_key,
-            pq_key: Some(pq_key),
-        }
-    }
-
-    /// Check if public key has PQ component
-    pub fn has_pq_key(&self) -> bool {
-        self.pq_key.is_some()
-    }
-
-    /// Get PQ key (returns None if not present)
-    pub fn pq_key(&self) -> Option<&Vec<u8>> {
-        self.pq_key.as_ref()
-    }
-
-    /// Get Ed25519 public key
     pub fn ed25519_key(&self) -> &[u8] {
         &self.ed25519_key
     }

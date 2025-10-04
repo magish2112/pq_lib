@@ -3,8 +3,13 @@
 //! This module provides implementations for NIST post-quantum algorithms
 //! including ML-DSA and SLH-DSA for hybrid cryptographic operations.
 
-use core::fmt;
-use crate::{AlgorithmId, CryptoResult};
+#[cfg(not(feature = "std"))]
+use alloc::{boxed::Box, vec::Vec, string::ToString};
+
+#[cfg(feature = "std")]
+use std::{boxed::Box, vec::Vec, string::ToString};
+
+use crate::{AlgorithmId, CryptoResult, CryptoError};
 
 /// Post-quantum keypair for hybrid operations
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -101,7 +106,7 @@ impl PqcOperations for MockPqcOps {
             AlgorithmId::MlDsa65 => (1952, 4032),
             AlgorithmId::MlDsa87 => (2592, 4896),
             AlgorithmId::SlhDsaShake256f => (32, 64),
-            _ => return Err("Unsupported algorithm"),
+            _ => return Err(CryptoError::UnsupportedAlgorithm(algorithm.to_string())),
         };
 
         // Mock key generation using simple deterministic approach
@@ -116,7 +121,7 @@ impl PqcOperations for MockPqcOps {
             AlgorithmId::MlDsa65 => 3309,
             AlgorithmId::MlDsa87 => 4627,
             AlgorithmId::SlhDsaShake256f => 7856,
-            _ => return Err("Unsupported algorithm"),
+            _ => return Err(CryptoError::UnsupportedAlgorithm(algorithm.to_string())),
         };
 
         // Mock signature: simple XOR-based approach for demonstration
@@ -139,7 +144,7 @@ impl PqcOperations for MockPqcOps {
             AlgorithmId::MlDsa65 => 3309,
             AlgorithmId::MlDsa87 => 4627,
             AlgorithmId::SlhDsaShake256f => 7856,
-            _ => return Err("Unsupported algorithm"),
+            _ => return Err(CryptoError::UnsupportedAlgorithm(algorithm.to_string())),
         };
 
         if signature.len() != expected_size {
@@ -179,7 +184,7 @@ impl PqcOperations for RealPqcOps {
                 let (pk, sk) = ml_dsa::ml_dsa_87::Keypair::generate();
                 Ok(PqcKeypair::new(algorithm, pk.into_bytes().to_vec(), sk.into_bytes().to_vec()))
             },
-            _ => Err("ML-DSA algorithms only supported in real implementation"),
+            _ => Err(CryptoError::UnsupportedAlgorithm(algorithm.to_string())),
         }
     }
 
@@ -187,17 +192,17 @@ impl PqcOperations for RealPqcOps {
         match algorithm {
             AlgorithmId::MlDsa65 => {
                 let sk = ml_dsa::ml_dsa_65::SecretKey::try_from_bytes(private_key)
-                    .map_err(|_| "Invalid private key")?;
+                    .map_err(|_| CryptoError::InvalidKey("Invalid ML-DSA private key".to_string()))?;
                 let signature = sk.sign(data);
                 Ok(PqcSignature::new(algorithm, signature.to_bytes().to_vec()))
             },
             AlgorithmId::MlDsa87 => {
                 let sk = ml_dsa::ml_dsa_87::SecretKey::try_from_bytes(private_key)
-                    .map_err(|_| "Invalid private key")?;
+                    .map_err(|_| CryptoError::InvalidKey("Invalid ML-DSA private key".to_string()))?;
                 let signature = sk.sign(data);
                 Ok(PqcSignature::new(algorithm, signature.to_bytes().to_vec()))
             },
-            _ => Err("ML-DSA algorithms only supported in real implementation"),
+            _ => Err(CryptoError::UnsupportedAlgorithm(algorithm.to_string())),
         }
     }
 
@@ -205,19 +210,19 @@ impl PqcOperations for RealPqcOps {
         match algorithm {
             AlgorithmId::MlDsa65 => {
                 let pk = ml_dsa::ml_dsa_65::PublicKey::try_from_bytes(public_key)
-                    .map_err(|_| "Invalid public key")?;
+                    .map_err(|_| CryptoError::InvalidKey("Invalid ML-DSA public key".to_string()))?;
                 let sig = ml_dsa::ml_dsa_65::Signature::try_from_bytes(signature)
-                    .map_err(|_| "Invalid signature")?;
+                    .map_err(|_| CryptoError::InvalidSignature("Invalid ML-DSA signature".to_string()))?;
                 Ok(pk.verify(data, &sig).is_ok())
             },
             AlgorithmId::MlDsa87 => {
                 let pk = ml_dsa::ml_dsa_87::PublicKey::try_from_bytes(public_key)
-                    .map_err(|_| "Invalid public key")?;
+                    .map_err(|_| CryptoError::InvalidKey("Invalid ML-DSA public key".to_string()))?;
                 let sig = ml_dsa::ml_dsa_87::Signature::try_from_bytes(signature)
-                    .map_err(|_| "Invalid signature")?;
+                    .map_err(|_| CryptoError::InvalidSignature("Invalid ML-DSA signature".to_string()))?;
                 Ok(pk.verify(data, &sig).is_ok())
             },
-            _ => Err("ML-DSA algorithms only supported in real implementation"),
+            _ => Err(CryptoError::UnsupportedAlgorithm(algorithm.to_string())),
         }
     }
 }
@@ -234,7 +239,7 @@ impl PqcOperations for SlhDsaPqcOps {
                 let (pk, sk) = slh_dsa::slh_dsa_shake_256f::Keypair::generate();
                 Ok(PqcKeypair::new(algorithm, pk.into_bytes().to_vec(), sk.into_bytes().to_vec()))
             },
-            _ => Err("SLH-DSA algorithms only supported in real implementation"),
+            _ => Err(CryptoError::UnsupportedAlgorithm(algorithm.to_string())),
         }
     }
 
@@ -242,11 +247,11 @@ impl PqcOperations for SlhDsaPqcOps {
         match algorithm {
             AlgorithmId::SlhDsaShake256f => {
                 let sk = slh_dsa::slh_dsa_shake_256f::SecretKey::try_from_bytes(private_key)
-                    .map_err(|_| "Invalid private key")?;
+                    .map_err(|_| CryptoError::InvalidKey("Invalid ML-DSA private key".to_string()))?;
                 let signature = sk.sign(data);
                 Ok(PqcSignature::new(algorithm, signature.to_bytes().to_vec()))
             },
-            _ => Err("SLH-DSA algorithms only supported in real implementation"),
+            _ => Err(CryptoError::UnsupportedAlgorithm(algorithm.to_string())),
         }
     }
 
@@ -254,12 +259,12 @@ impl PqcOperations for SlhDsaPqcOps {
         match algorithm {
             AlgorithmId::SlhDsaShake256f => {
                 let pk = slh_dsa::slh_dsa_shake_256f::PublicKey::try_from_bytes(public_key)
-                    .map_err(|_| "Invalid public key")?;
+                    .map_err(|_| CryptoError::InvalidKey("Invalid ML-DSA public key".to_string()))?;
                 let sig = slh_dsa::slh_dsa_shake_256f::Signature::try_from_bytes(signature)
-                    .map_err(|_| "Invalid signature")?;
+                    .map_err(|_| CryptoError::InvalidSignature("Invalid ML-DSA signature".to_string()))?;
                 Ok(pk.verify(data, &sig).is_ok())
             },
-            _ => Err("SLH-DSA algorithms only supported in real implementation"),
+            _ => Err(CryptoError::UnsupportedAlgorithm(algorithm.to_string())),
         }
     }
 }
@@ -301,7 +306,8 @@ mod tests {
 
     #[test]
     fn test_mock_pqc_keypair_generation() {
-        let keypair = MockPqcOps::generate_keypair(AlgorithmId::MlDsa65).unwrap();
+        let ops = MockPqcOps;
+        let keypair = ops.generate_keypair(AlgorithmId::MlDsa65).unwrap();
         assert_eq!(keypair.algorithm, AlgorithmId::MlDsa65);
         assert_eq!(keypair.public_key.len(), keypair.expected_public_key_size());
         assert_eq!(keypair.private_key.len(), keypair.expected_private_key_size());
@@ -309,64 +315,69 @@ mod tests {
 
     #[test]
     fn test_mock_pqc_signing() {
-        let keypair = MockPqcOps::generate_keypair(AlgorithmId::MlDsa65).unwrap();
+        let ops = MockPqcOps;
+        let keypair = ops.generate_keypair(AlgorithmId::MlDsa65).unwrap();
         let data = b"test data";
 
-        let signature = MockPqcOps::sign(data, &keypair.private_key, AlgorithmId::MlDsa65).unwrap();
+        let signature = ops.sign(data, &keypair.private_key, AlgorithmId::MlDsa65).unwrap();
         assert_eq!(signature.algorithm, AlgorithmId::MlDsa65);
         assert_eq!(signature.signature.len(), signature.expected_size());
 
-        let is_valid = MockPqcOps::verify(data, &signature.signature, &keypair.public_key, AlgorithmId::MlDsa65).unwrap();
+        let is_valid = ops.verify(data, &signature.signature, &keypair.public_key, AlgorithmId::MlDsa65).unwrap();
         assert!(is_valid);
     }
 
     #[test]
     fn test_mock_pqc_verification_fails_with_wrong_data() {
-        let keypair = MockPqcOps::generate_keypair(AlgorithmId::MlDsa65).unwrap();
+        let ops = MockPqcOps;
+        let keypair = ops.generate_keypair(AlgorithmId::MlDsa65).unwrap();
         let data = b"test data";
 
-        let signature = MockPqcOps::sign(data, &keypair.private_key, AlgorithmId::MlDsa65).unwrap();
+        let signature = ops.sign(data, &keypair.private_key, AlgorithmId::MlDsa65).unwrap();
         let wrong_data = b"wrong data";
 
-        let is_valid = MockPqcOps::verify(wrong_data, &signature.signature, &keypair.public_key, AlgorithmId::MlDsa65).unwrap();
+        let is_valid = ops.verify(wrong_data, &signature.signature, &keypair.public_key, AlgorithmId::MlDsa65).unwrap();
         assert!(!is_valid);
     }
 
     #[test]
     fn test_pqc_keypair_sizes() {
-        let keypair = MockPqcOps::generate_keypair(AlgorithmId::MlDsa65).unwrap();
+        let ops = MockPqcOps;
+        let keypair = ops.generate_keypair(AlgorithmId::MlDsa65).unwrap();
         assert_eq!(keypair.expected_public_key_size(), 1952);
         assert_eq!(keypair.expected_private_key_size(), 4032);
 
-        let keypair = MockPqcOps::generate_keypair(AlgorithmId::MlDsa87).unwrap();
+        let keypair = ops.generate_keypair(AlgorithmId::MlDsa87).unwrap();
         assert_eq!(keypair.expected_public_key_size(), 2592);
         assert_eq!(keypair.expected_private_key_size(), 4896);
 
-        let keypair = MockPqcOps::generate_keypair(AlgorithmId::SlhDsaShake256f).unwrap();
+        let keypair = ops.generate_keypair(AlgorithmId::SlhDsaShake256f).unwrap();
         assert_eq!(keypair.expected_public_key_size(), 32);
         assert_eq!(keypair.expected_private_key_size(), 64);
     }
 
     #[test]
     fn test_pqc_signature_sizes() {
-        let keypair = MockPqcOps::generate_keypair(AlgorithmId::MlDsa65).unwrap();
-        let signature = MockPqcOps::sign(b"test", &keypair.private_key, AlgorithmId::MlDsa65).unwrap();
+        let ops = MockPqcOps;
+        let keypair = ops.generate_keypair(AlgorithmId::MlDsa65).unwrap();
+        let signature = ops.sign(b"test", &keypair.private_key, AlgorithmId::MlDsa65).unwrap();
         assert_eq!(signature.expected_size(), 3309);
 
-        let keypair = MockPqcOps::generate_keypair(AlgorithmId::MlDsa87).unwrap();
-        let signature = MockPqcOps::sign(b"test", &keypair.private_key, AlgorithmId::MlDsa87).unwrap();
+        let keypair = ops.generate_keypair(AlgorithmId::MlDsa87).unwrap();
+        let signature = ops.sign(b"test", &keypair.private_key, AlgorithmId::MlDsa87).unwrap();
         assert_eq!(signature.expected_size(), 4627);
 
-        let keypair = MockPqcOps::generate_keypair(AlgorithmId::SlhDsaShake256f).unwrap();
-        let signature = MockPqcOps::sign(b"test", &keypair.private_key, AlgorithmId::SlhDsaShake256f).unwrap();
+        let keypair = ops.generate_keypair(AlgorithmId::SlhDsaShake256f).unwrap();
+        let signature = ops.sign(b"test", &keypair.private_key, AlgorithmId::SlhDsaShake256f).unwrap();
         assert_eq!(signature.expected_size(), 7856);
     }
 
     #[test]
     fn test_deterministic_key_generation() {
+        let ops = MockPqcOps;
         // Test that key generation is deterministic for the same algorithm
-        let keypair1 = MockPqcOps::generate_keypair(AlgorithmId::MlDsa65).unwrap();
-        let keypair2 = MockPqcOps::generate_keypair(AlgorithmId::MlDsa65).unwrap();
+        let keypair1 = ops.generate_keypair(AlgorithmId::MlDsa65).unwrap();
+        let keypair2 = ops.generate_keypair(AlgorithmId::MlDsa65).unwrap();
 
         // Keys should be the same (deterministic generation)
         assert_eq!(keypair1.public_key, keypair2.public_key);

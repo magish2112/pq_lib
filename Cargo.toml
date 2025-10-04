@@ -16,28 +16,36 @@ name = "pq_lib"
 path = "src/lib.rs"
 
 [features]
-default = ["std"]
+default = ["std", "ed25519"]
 std = []
 no_std = []
-# ed25519 = ["ed25519-dalek"]
-# ml-dsa = ["dep:ml-dsa"]
-# slh-dsa = ["dep:slh-dsa"]
+ed25519 = ["dep:ed25519-dalek", "dep:rand"]
+ml-dsa = []
+slh-dsa = []
+serde-support = ["dep:serde", "dep:serde_cbor"]
 
 [dependencies]
-# Core cryptographic primitives (minimal for basic functionality)
-# rand = { version = "0.8", default-features = false }
-# sha3 = { version = "0.10", default-features = false }
+# Core cryptographic primitives
+rand = { version = "0.8", default-features = false, optional = true }
+sha3 = { version = "0.10", default-features = false }
 
-# Security utilities (commented out due to linker issues)
-# zeroize = { version = "1.7", features = ["zeroize_derive"] }
+# Security utilities
+zeroize = { version = "1.7", features = ["zeroize_derive"] }
+
+# Async trait support
+async-trait = "0.1"
+
+# Serialization support (optional)
+serde = { version = "1.0", default-features = false, features = ["derive"], optional = true }
+serde_cbor = { version = "0.11", optional = true }
+
+# Classic cryptography for hybrid approach
+ed25519-dalek = { version = "2.1", default-features = false, features = ["rand_core"], optional = true }
 
 # Post-quantum cryptography (NIST algorithms)
-# Note: Using mock implementations for now due to compatibility issues
+# Note: Using mock implementations for now - uncomment when ready to use real implementations
 # ml-dsa = { version = "0.1.0-rc.0", optional = true }
 # slh-dsa = { version = "0.2.0-rc.0", optional = true }
-
-# Classic cryptography for hybrid approach (optional for minimal builds)
-# ed25519-dalek = { version = "2.1", default-features = false, optional = true }
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }

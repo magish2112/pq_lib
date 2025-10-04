@@ -1,5 +1,11 @@
 //! Domain separators for cryptographic operations
 
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
+
+#[cfg(feature = "std")]
+use std::vec::Vec;
+
 use core::fmt;
 
 /// Domain separators for cryptographic operations to prevent cross-protocol attacks

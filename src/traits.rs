@@ -1,6 +1,9 @@
 //! Cryptographic trait definitions
 
-use crate::{AlgorithmId, DomainSeparator, HybridKeypair, HybridPrivateKey, HybridPublicKey, HybridSignature, CryptoResult};
+use crate::{
+    AlgorithmId, DomainSeparator, HybridKeypair, HybridPrivateKey, HybridPublicKey, HybridSignature,
+    CryptoResult, ValidationPolicy,
+};
 
 /// Key generation trait
 #[async_trait::async_trait]
@@ -36,7 +39,7 @@ pub trait Verifier {
         data: &[u8],
         signature: &HybridSignature,
         public_key: &HybridPublicKey,
-        policy: crate::ValidationPolicy,
+        policy: ValidationPolicy,
     ) -> CryptoResult<bool>;
 
     /// Verify signature with default hybrid policy
@@ -45,7 +48,7 @@ pub trait Verifier {
         signature: &HybridSignature,
         public_key: &HybridPublicKey,
     ) -> CryptoResult<bool> {
-        Self::verify_with_policy(data, signature, public_key, crate::ValidationPolicy::HybridPreferred).await
+        Self::verify_with_policy(data, signature, public_key, ValidationPolicy::HybridPreferred).await
     }
 }
 
@@ -83,7 +86,7 @@ pub trait BatchVerifier {
         messages: &[&[u8]],
         signatures: &[HybridSignature],
         public_keys: &[HybridPublicKey],
-        policy: crate::ValidationPolicy,
+        policy: ValidationPolicy,
     ) -> CryptoResult<Vec<bool>>;
 }
 
@@ -137,7 +140,7 @@ mod tests {
             _data: &[u8],
             _signature: &HybridSignature,
             _public_key: &HybridPublicKey,
-            _policy: crate::ValidationPolicy,
+            _policy: ValidationPolicy,
         ) -> CryptoResult<bool> {
             Ok(true)
         }

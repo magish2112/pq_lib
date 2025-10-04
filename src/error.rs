@@ -22,6 +22,10 @@ pub enum CryptoError {
     AlgorithmNotAvailable(String),
     /// Internal error
     InternalError(String),
+    /// Algorithm mismatch between signature and public key
+    AlgorithmMismatch,
+    /// Policy violation during verification
+    PolicyViolation(String),
 }
 
 impl fmt::Display for CryptoError {
@@ -43,6 +47,10 @@ impl fmt::Display for CryptoError {
                 write!(f, "Algorithm not available: {}", algo),
             CryptoError::InternalError(msg) =>
                 write!(f, "Internal error: {}", msg),
+            CryptoError::AlgorithmMismatch =>
+                write!(f, "Algorithm mismatch between signature and public key"),
+            CryptoError::PolicyViolation(msg) =>
+                write!(f, "Policy violation: {}", msg),
         }
     }
 }

@@ -6,25 +6,6 @@
 
 use core::fmt;
 
-/// Basic error type for the minimal version
-#[derive(Debug, Clone)]
-pub struct CryptoError {
-    message: &'static str,
-}
-
-impl CryptoError {
-    /// Creates a new cryptographic error with the specified message
-    pub fn new(message: &'static str) -> Self {
-        Self { message }
-    }
-}
-
-impl fmt::Display for CryptoError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.message)
-    }
-}
-
 /// Supported cryptographic algorithms for hybrid signatures
 ///
 /// This enum defines the available algorithms that can be used for creating

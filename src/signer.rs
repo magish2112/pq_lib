@@ -1,14 +1,20 @@
 //! Production-ready hybrid signer implementation
 
-use core::fmt;
+#[cfg(not(feature = "std"))]
+use alloc::{boxed::Box, format, string::ToString, vec::Vec};
+
+#[cfg(feature = "std")]
+use std::{boxed::Box, format, string::ToString, vec::Vec};
 
 use crate::{
     AlgorithmId, DomainSeparator, HybridKeypair, HybridPrivateKey, HybridPublicKey, HybridSignature,
-    KeyGenerator, Signer, Verifier, KemProvider, ValidationPolicy, CryptoResult, domain, pqc,
+    CryptoError, CryptoResult, domain, pqc,
+    traits::{KeyGenerator, Signer, Verifier, KemProvider},
+    ValidationPolicy,
 };
 
 #[cfg(feature = "ed25519")]
-use ed25519_dalek::{Keypair, PublicKey, SecretKey, Signature, Signer as EdSigner, Verifier as EdVerifier};
+use ed25519_dalek::{SigningKey, VerifyingKey, Signature, Signer as EdSigner, Verifier as EdVerifier};
 
 /// Production-ready hybrid signer implementation
 pub struct HybridSigner;
@@ -22,15 +28,15 @@ impl HybridSigner {
     /// Sign with Ed25519 using real cryptographic operations
     #[cfg(feature = "ed25519")]
     fn sign_ed25519(data: &[u8], private_key: &[u8]) -> Result<Vec<u8>, CryptoError> {
-        let secret_key = SecretKey::from_bytes(private_key)
-            .map_err(|_| CryptoError::InvalidKey("Invalid Ed25519 private key".to_string()))?;
+        if private_key.len() != 32 {
+            return Err(CryptoError::InvalidKey("Ed25519 private key must be 32 bytes".to_string()));
+        }
+        
+        let mut key_bytes = [0u8; 32];
+        key_bytes.copy_from_slice(private_key);
+        let signing_key = SigningKey::from_bytes(&key_bytes);
 
-        let keypair = Keypair {
-            secret: secret_key,
-            public: PublicKey::from(&secret_key),
-        };
-
-        let signature = keypair.sign(data);
+        let signature = signing_key.sign(data);
         Ok(signature.to_bytes().to_vec())
     }
 
@@ -47,13 +53,23 @@ impl HybridSigner {
     /// Verify Ed25519 signature using real cryptographic operations
     #[cfg(feature = "ed25519")]
     fn verify_ed25519(data: &[u8], signature: &[u8], public_key: &[u8]) -> Result<bool, CryptoError> {
-        let public_key = PublicKey::from_bytes(public_key)
+        if public_key.len() != 32 {
+            return Err(CryptoError::InvalidKey("Ed25519 public key must be 32 bytes".to_string()));
+        }
+        if signature.len() != 64 {
+            return Err(CryptoError::InvalidSignature("Ed25519 signature must be 64 bytes".to_string()));
+        }
+
+        let mut pub_key_bytes = [0u8; 32];
+        pub_key_bytes.copy_from_slice(public_key);
+        let verifying_key = VerifyingKey::from_bytes(&pub_key_bytes)
             .map_err(|_| CryptoError::InvalidKey("Invalid Ed25519 public key".to_string()))?;
 
-        let signature = Signature::from_bytes(signature)
-            .map_err(|_| CryptoError::InvalidSignature("Invalid Ed25519 signature".to_string()))?;
+        let mut sig_bytes = [0u8; 64];
+        sig_bytes.copy_from_slice(signature);
+        let sig = Signature::from_bytes(&sig_bytes);
 
-        Ok(public_key.verify(data, &signature).is_ok())
+        Ok(verifying_key.verify(data, &sig).is_ok())
     }
 
     /// Verify Ed25519 signature (fallback for no_std)
@@ -144,15 +160,15 @@ impl KeyGenerator for HybridSigner {
 
         #[cfg(feature = "ed25519")]
         {
+            use rand::RngCore;
+            
             // Generate real Ed25519 keypair
-            let mut secret_key_bytes = [0u8; 32];
-            rand::fill(&mut secret_key_bytes);
-            let secret_key = SecretKey::from_bytes(&secret_key_bytes)
-                .map_err(|_| CryptoError::InternalError("Failed to create Ed25519 secret key".to_string()))?;
-
-            let public_key = PublicKey::from(&secret_key);
-            let ed25519_public = public_key.to_bytes().to_vec();
-            let ed25519_private = secret_key.to_bytes().to_vec();
+            let mut csprng = rand::thread_rng();
+            let signing_key = SigningKey::generate(&mut csprng);
+            
+            let verifying_key = signing_key.verifying_key();
+            let ed25519_public = verifying_key.to_bytes().to_vec();
+            let ed25519_private = signing_key.to_bytes().to_vec();
 
             // For Ed25519-only, we're done
             if algorithm == AlgorithmId::Ed25519 {
@@ -165,7 +181,7 @@ impl KeyGenerator for HybridSigner {
             let pqc_ops = pqc::get_pqc_ops_for_algorithm(algorithm)?;
             let pq_keypair = pqc_ops.generate_keypair(algorithm)?;
 
-            let public_key = HybridPublicKey::new(algorithm, ed25519_public, pq_keypair.public_key);
+            let public_key = HybridPublicKey::with_pq(algorithm, ed25519_public, pq_keypair.public_key);
             let private_key = HybridPrivateKey::new(algorithm, ed25519_private, pq_keypair.private_key);
 
             Ok(HybridKeypair::new(public_key, private_key))
@@ -259,7 +275,7 @@ impl Signer for HybridSigner {
         let pq_sig = if private_key.pq_key.is_some() {
             #[cfg(any(feature = "ml-dsa", feature = "slh-dsa"))]
             {
-                Some(Self::sign_pq(&domain_separated_data, private_key.pq_key.as_ref().unwrap(), private_key.algorithm))
+                Some(Self::sign_pq(&domain_separated_data, private_key.pq_key.as_ref().unwrap(), private_key.algorithm)?)
             }
             #[cfg(not(any(feature = "ml-dsa", feature = "slh-dsa")))]
             {
@@ -357,7 +373,7 @@ impl Verifier for HybridSigner {
                     signature.pq_sig.as_ref().unwrap(),
                     public_key.pq_key.as_ref().unwrap(),
                     signature.algorithm,
-                )
+                )?
             }
             #[cfg(not(any(feature = "ml-dsa", feature = "slh-dsa")))]
             {
@@ -453,8 +469,8 @@ mod tests {
         assert_eq!(keypair.public_key.algorithm, AlgorithmId::Ed25519);
         assert!(!keypair.private_key.has_pq_key());
         assert!(!keypair.public_key.has_pq_key());
-
-        keypair.validate().unwrap();
+        assert_eq!(keypair.public_key.ed25519_key.len(), 32);
+        assert_eq!(keypair.private_key.ed25519_key.len(), 32);
     }
 
     #[cfg(feature = "ml-dsa")]
@@ -466,8 +482,8 @@ mod tests {
         assert_eq!(keypair.public_key.algorithm, AlgorithmId::MlDsa65);
         assert!(keypair.private_key.has_pq_key());
         assert!(keypair.public_key.has_pq_key());
-
-        keypair.validate().unwrap();
+        assert_eq!(keypair.public_key.ed25519_key.len(), 32);
+        assert_eq!(keypair.private_key.ed25519_key.len(), 32);
     }
 
     #[tokio::test]
