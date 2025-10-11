@@ -29,11 +29,13 @@ async fn run_performance_demo() -> Result<(), Box<dyn std::error::Error>> {
             let keypair = HybridSigner::generate_keypair(algorithm).await?;
             let duration = start.elapsed();
 
-            println!("  {:<25} | {:<8} | {} bytes public, {} bytes private",
+            println!(
+                "  {:<25} | {:<8} | {} bytes public, {} bytes private",
                 algorithm.name(),
                 format!("{:?}", duration),
                 keypair.public_key.expected_size(),
-                keypair.private_key.ed25519_key().len() + keypair.private_key.pq_key().unwrap_or(&vec![]).len()
+                keypair.private_key.ed25519_key().len()
+                    + keypair.private_key.pq_key().unwrap_or(&vec![]).len()
             );
         }
     }
@@ -54,11 +56,13 @@ async fn run_performance_demo() -> Result<(), Box<dyn std::error::Error>> {
             let signature = HybridSigner::sign_with_domain(
                 test_data,
                 &keypair.private_key,
-                DomainSeparator::Transaction
-            ).await?;
+                DomainSeparator::Transaction,
+            )
+            .await?;
             let sign_duration = start.elapsed();
 
-            println!("  {:<25} | {:<8} | {} bytes signature",
+            println!(
+                "  {:<25} | {:<8} | {} bytes signature",
                 algorithm.name(),
                 format!("{:?}", sign_duration),
                 signature.expected_size()
@@ -78,19 +82,22 @@ async fn run_performance_demo() -> Result<(), Box<dyn std::error::Error>> {
             let signature = HybridSigner::sign_with_domain(
                 test_data,
                 &keypair.private_key,
-                DomainSeparator::Transaction
-            ).await?;
+                DomainSeparator::Transaction,
+            )
+            .await?;
 
             let start = Instant::now();
             let is_valid = HybridSigner::verify_with_policy(
                 test_data,
                 &signature,
                 &keypair.public_key,
-                ValidationPolicy::HybridRequired
-            ).await?;
+                ValidationPolicy::HybridRequired,
+            )
+            .await?;
             let verify_duration = start.elapsed();
 
-            println!("  {:<25} | {:<8} | valid: {}",
+            println!(
+                "  {:<25} | {:<8} | valid: {}",
                 algorithm.name(),
                 format!("{:?}", verify_duration),
                 is_valid
@@ -110,8 +117,9 @@ async fn run_performance_demo() -> Result<(), Box<dyn std::error::Error>> {
     let signature = HybridSigner::sign_with_domain(
         test_data,
         &keypair.private_key,
-        DomainSeparator::Transaction
-    ).await?;
+        DomainSeparator::Transaction,
+    )
+    .await?;
 
     // Serialize signature
     let start = Instant::now();
@@ -123,14 +131,16 @@ async fn run_performance_demo() -> Result<(), Box<dyn std::error::Error>> {
     let deserialized = pq_lib::serialization::deserialize_signature(&serialized)?;
     let deserialize_duration = start.elapsed();
 
-    println!("  {:<25} | serialize: {:?}, deserialize: {:?}",
-        "Signature (CBOR)",
-        serialize_duration,
-        deserialize_duration
+    println!(
+        "  {:<25} | serialize: {:?}, deserialize: {:?}",
+        "Signature (CBOR)", serialize_duration, deserialize_duration
     );
 
     // Verify round-trip integrity
-    assert_eq!(signature, deserialized, "Serialization round-trip should preserve data");
+    assert_eq!(
+        signature, deserialized,
+        "Serialization round-trip should preserve data"
+    );
 
     println!();
 
@@ -149,21 +159,22 @@ async fn run_performance_demo() -> Result<(), Box<dyn std::error::Error>> {
 
     for domain in domains {
         let start = Instant::now();
-        let signature = HybridSigner::sign_with_domain(
-            same_data,
-            &keypair.private_key,
-            domain
-        ).await?;
+        let signature =
+            HybridSigner::sign_with_domain(same_data, &keypair.private_key, domain).await?;
         let duration = start.elapsed();
 
-        println!("  {:<25} | {:?} | signature differs: {}",
+        println!(
+            "  {:<25} | {:?} | signature differs: {}",
             format!("{:?}", domain),
             duration,
-            signature.ed25519_sig() != HybridSigner::sign_with_domain(
-                same_data,
-                &keypair.private_key,
-                DomainSeparator::Transaction
-            ).await?.ed25519_sig()
+            signature.ed25519_sig()
+                != HybridSigner::sign_with_domain(
+                    same_data,
+                    &keypair.private_key,
+                    DomainSeparator::Transaction
+                )
+                .await?
+                .ed25519_sig()
         );
     }
 

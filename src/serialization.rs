@@ -1,46 +1,46 @@
 //! Stable serialization utilities for cryptographic types
 
-use crate::{HybridSignature, HybridPublicKey, CryptoResult};
+use crate::{CryptoResult, HybridPublicKey, HybridSignature};
 
 /// Serialize signature to CBOR bytes
 pub fn serialize_signature(signature: &HybridSignature) -> CryptoResult<Vec<u8>> {
-    serde_cbor::to_vec(signature)
-        .map_err(|e| crate::CryptoError::SerializationError(e.to_string()))
+    serde_cbor::to_vec(signature).map_err(|e| crate::CryptoError::SerializationError(e.to_string()))
 }
 
 /// Deserialize signature from CBOR bytes
 pub fn deserialize_signature(bytes: &[u8]) -> CryptoResult<HybridSignature> {
-    serde_cbor::from_slice(bytes)
-        .map_err(|e| crate::CryptoError::SerializationError(e.to_string()))
+    serde_cbor::from_slice(bytes).map_err(|e| crate::CryptoError::SerializationError(e.to_string()))
 }
 
 /// Serialize public key to CBOR bytes
 pub fn serialize_public_key(key: &HybridPublicKey) -> CryptoResult<Vec<u8>> {
-    serde_cbor::to_vec(key)
-        .map_err(|e| crate::CryptoError::SerializationError(e.to_string()))
+    serde_cbor::to_vec(key).map_err(|e| crate::CryptoError::SerializationError(e.to_string()))
 }
 
 /// Deserialize public key from CBOR bytes
 pub fn deserialize_public_key(bytes: &[u8]) -> CryptoResult<HybridPublicKey> {
-    serde_cbor::from_slice(bytes)
-        .map_err(|e| crate::CryptoError::SerializationError(e.to_string()))
+    serde_cbor::from_slice(bytes).map_err(|e| crate::CryptoError::SerializationError(e.to_string()))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{HybridSigner, AlgorithmId, DomainSeparator};
+    use crate::{AlgorithmId, DomainSeparator, HybridSigner};
 
     #[tokio::test]
     async fn test_signature_serialization() {
-        let keypair = HybridSigner::generate_keypair(AlgorithmId::Ed25519).await.unwrap();
+        let keypair = HybridSigner::generate_keypair(AlgorithmId::Ed25519)
+            .await
+            .unwrap();
         let data = b"Serialization test";
 
         let signature = HybridSigner::sign_with_domain(
             data,
             &keypair.private_key,
             DomainSeparator::Transaction,
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
 
         // Serialize and deserialize signature
         let serialized = serialize_signature(&signature).unwrap();
@@ -49,12 +49,18 @@ mod tests {
         assert_eq!(signature, deserialized);
 
         // Should still verify
-        assert!(HybridSigner::verify(data, &deserialized, &keypair.public_key).await.unwrap());
+        assert!(
+            HybridSigner::verify(data, &deserialized, &keypair.public_key)
+                .await
+                .unwrap()
+        );
     }
 
     #[tokio::test]
     async fn test_public_key_serialization() {
-        let keypair = HybridSigner::generate_keypair(AlgorithmId::Ed25519).await.unwrap();
+        let keypair = HybridSigner::generate_keypair(AlgorithmId::Ed25519)
+            .await
+            .unwrap();
 
         // Serialize and deserialize public key
         let serialized = serialize_public_key(&keypair.public_key).unwrap();
@@ -75,4 +81,3 @@ mod tests {
         assert_eq!(serialized1, serialized2);
     }
 }
-

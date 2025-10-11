@@ -1,12 +1,13 @@
 //! Hybrid cryptographic keypair types
 
 #[cfg(not(feature = "std"))]
-use alloc::{vec::Vec};
+use alloc::vec::Vec;
 
 #[cfg(feature = "std")]
 use std::vec::Vec;
 
 use crate::AlgorithmId;
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
 /// A hybrid cryptographic keypair combining classical and post-quantum keys.
 ///
@@ -31,7 +32,10 @@ use crate::AlgorithmId;
 /// }
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "serde-support", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde-support",
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub struct HybridKeypair {
     /// The public key component of the keypair
     pub public_key: HybridPublicKey,
@@ -72,7 +76,10 @@ impl HybridKeypair {
 /// assert!(public_key.pq_key.is_none());
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "serde-support", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde-support",
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub struct HybridPublicKey {
     /// The cryptographic algorithm this key is designed for
     pub algorithm: AlgorithmId,
@@ -151,10 +158,14 @@ impl HybridPublicKey {
 /// assert_eq!(private_key.algorithm, AlgorithmId::Ed25519);
 /// assert!(private_key.pq_key.is_none());
 /// ```
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "serde-support", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Zeroize, ZeroizeOnDrop)]
+#[cfg_attr(
+    feature = "serde-support",
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub struct HybridPrivateKey {
     /// The cryptographic algorithm this key is designed for
+    #[zeroize(skip)]
     pub algorithm: AlgorithmId,
     /// The Ed25519 private key component (always present)
     pub ed25519_key: Vec<u8>,
@@ -197,17 +208,8 @@ impl HybridPrivateKey {
     }
 }
 
-// Zeroize implementation for secure cleanup
-#[cfg(feature = "std")]
-impl Drop for HybridPrivateKey {
-    fn drop(&mut self) {
-        // In a real implementation, use zeroize crate
-        self.ed25519_key.iter_mut().for_each(|b| *b = 0);
-        if let Some(pq_key) = &mut self.pq_key {
-            pq_key.iter_mut().for_each(|b| *b = 0);
-        }
-    }
-}
+// Zeroization is now handled automatically by ZeroizeOnDrop derive macro
+// The zeroize crate ensures secure memory cleanup when HybridPrivateKey is dropped
 
 #[cfg(test)]
 mod tests {

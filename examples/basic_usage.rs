@@ -9,10 +9,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Demonstrate AlgorithmId
     println!("\nAvailable algorithms:");
     for algo in available_algorithms() {
-        println!("  - {}: {} bytes signature, security level {}",
-                algo.name(),
-                algo.signature_size(),
-                algo.security_level());
+        println!(
+            "  - {}: {} bytes signature, security level {}",
+            algo.name(),
+            algo.signature_size(),
+            algo.security_level()
+        );
     }
 
     // Demonstrate key types
@@ -24,7 +26,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("  Public key algorithm: {}", public_key.algorithm);
     println!("  Public key size: {} bytes", public_key.ed25519_key.len());
     println!("  Private key algorithm: {}", private_key.algorithm);
-    println!("  Private key size: {} bytes", private_key.ed25519_key.len());
+    println!(
+        "  Private key size: {} bytes",
+        private_key.ed25519_key.len()
+    );
 
     // Demonstrate signature
     let signature_data = b"Hello, pq_lib!";
@@ -33,9 +38,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\nSignature Information:");
     println!("  Version: {}", signature.version);
     println!("  Algorithm: {}", signature.algorithm);
-    println!("  Ed25519 signature size: {} bytes", signature.ed25519_sig.len());
+    println!(
+        "  Ed25519 signature size: {} bytes",
+        signature.ed25519_sig.len()
+    );
     println!("  Has PQ signature: {}", signature.pq_sig.is_some());
-    println!("  Valid for algorithm: {}", signature.is_valid_for_algorithm());
+    println!(
+        "  Valid for algorithm: {}",
+        signature.is_valid_for_algorithm()
+    );
 
     println!("\n✅ Basic usage example completed successfully!");
     Ok(())

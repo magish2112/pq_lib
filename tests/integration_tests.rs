@@ -12,8 +12,10 @@ fn test_core_types_integration() {
     assert_eq!(AlgorithmId::MlDsa65.signature_size(), 64 + 3302);
 
     // Test HybridPublicKey
-    let ed25519_key = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
-                          17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32];
+    let ed25519_key = vec![
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
+        26, 27, 28, 29, 30, 31, 32,
+    ];
     let public_key = HybridPublicKey::from_ed25519(ed25519_key.clone());
     assert_eq!(public_key.algorithm, AlgorithmId::Ed25519);
     assert_eq!(public_key.ed25519_key, ed25519_key);

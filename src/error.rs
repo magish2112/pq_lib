@@ -4,7 +4,10 @@ use core::fmt;
 
 /// Errors that can occur during cryptographic operations
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "serde-support", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde-support",
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub enum CryptoError {
     /// Unsupported algorithm
     UnsupportedAlgorithm(String),
@@ -31,26 +34,20 @@ pub enum CryptoError {
 impl fmt::Display for CryptoError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            CryptoError::UnsupportedAlgorithm(algo) =>
-                write!(f, "Unsupported algorithm: {}", algo),
-            CryptoError::InvalidKey(msg) =>
-                write!(f, "Invalid key: {}", msg),
-            CryptoError::InvalidSignature(msg) =>
-                write!(f, "Invalid signature: {}", msg),
-            CryptoError::VerificationFailed =>
-                write!(f, "Signature verification failed"),
-            CryptoError::SerializationError(msg) =>
-                write!(f, "Serialization error: {}", msg),
-            CryptoError::DomainError(msg) =>
-                write!(f, "Domain error: {}", msg),
-            CryptoError::AlgorithmNotAvailable(algo) =>
-                write!(f, "Algorithm not available: {}", algo),
-            CryptoError::InternalError(msg) =>
-                write!(f, "Internal error: {}", msg),
-            CryptoError::AlgorithmMismatch =>
-                write!(f, "Algorithm mismatch between signature and public key"),
-            CryptoError::PolicyViolation(msg) =>
-                write!(f, "Policy violation: {}", msg),
+            CryptoError::UnsupportedAlgorithm(algo) => write!(f, "Unsupported algorithm: {}", algo),
+            CryptoError::InvalidKey(msg) => write!(f, "Invalid key: {}", msg),
+            CryptoError::InvalidSignature(msg) => write!(f, "Invalid signature: {}", msg),
+            CryptoError::VerificationFailed => write!(f, "Signature verification failed"),
+            CryptoError::SerializationError(msg) => write!(f, "Serialization error: {}", msg),
+            CryptoError::DomainError(msg) => write!(f, "Domain error: {}", msg),
+            CryptoError::AlgorithmNotAvailable(algo) => {
+                write!(f, "Algorithm not available: {}", algo)
+            }
+            CryptoError::InternalError(msg) => write!(f, "Internal error: {}", msg),
+            CryptoError::AlgorithmMismatch => {
+                write!(f, "Algorithm mismatch between signature and public key")
+            }
+            CryptoError::PolicyViolation(msg) => write!(f, "Policy violation: {}", msg),
         }
     }
 }

@@ -1,8 +1,8 @@
 //! Cryptographic trait definitions
 
 use crate::{
-    AlgorithmId, DomainSeparator, HybridKeypair, HybridPrivateKey, HybridPublicKey, HybridSignature,
-    CryptoResult, ValidationPolicy,
+    AlgorithmId, CryptoResult, DomainSeparator, HybridKeypair, HybridPrivateKey, HybridPublicKey,
+    HybridSignature, ValidationPolicy,
 };
 
 /// Key generation trait
@@ -23,10 +23,7 @@ pub trait Signer {
     ) -> CryptoResult<HybridSignature>;
 
     /// Sign data without domain separation (legacy compatibility)
-    async fn sign(
-        data: &[u8],
-        private_key: &HybridPrivateKey,
-    ) -> CryptoResult<HybridSignature> {
+    async fn sign(data: &[u8], private_key: &HybridPrivateKey) -> CryptoResult<HybridSignature> {
         Self::sign_with_domain(data, private_key, DomainSeparator::Transaction).await
     }
 }
@@ -48,7 +45,13 @@ pub trait Verifier {
         signature: &HybridSignature,
         public_key: &HybridPublicKey,
     ) -> CryptoResult<bool> {
-        Self::verify_with_policy(data, signature, public_key, ValidationPolicy::HybridPreferred).await
+        Self::verify_with_policy(
+            data,
+            signature,
+            public_key,
+            ValidationPolicy::HybridPreferred,
+        )
+        .await
     }
 }
 
@@ -56,9 +59,7 @@ pub trait Verifier {
 #[async_trait::async_trait]
 pub trait KemProvider {
     /// Encapsulate shared secret for recipient
-    async fn encapsulate(
-        public_key: &HybridPublicKey,
-    ) -> CryptoResult<(Vec<u8>, Vec<u8>)>;
+    async fn encapsulate(public_key: &HybridPublicKey) -> CryptoResult<(Vec<u8>, Vec<u8>)>;
 
     /// Decapsulate shared secret using private key
     async fn decapsulate(
@@ -158,4 +159,3 @@ mod tests {
         _test_verifier::<MockSigner>();
     }
 }
-

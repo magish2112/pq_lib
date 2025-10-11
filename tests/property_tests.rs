@@ -1,7 +1,7 @@
 //! Property-based tests for cryptographic invariants
 
-use proptest::prelude::*;
 use pq_lib::*;
+use proptest::prelude::*;
 
 proptest! {
     /// Test that domain separation creates different signatures for same data

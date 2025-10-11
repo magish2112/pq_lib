@@ -299,34 +299,36 @@ This library is in active development. Please report security issues to security
 
 ### Security Audit
 
-- [ ] Planned for Q2 2025
+- [ ] Planned for Q2-Q3 2026
 - [ ] Independent third-party audit
 - [ ] Formal verification of critical components
 
 ## Roadmap
 
-### v0.1.x (Current)
+### v0.1.x (Current - Q4 2025)
 - ✅ Hybrid Ed25519 + PQ signatures
 - ✅ Domain separation
 - ✅ Policy-based validation
 - ✅ Stable serialization
 - ✅ Migration utilities
 
-### v0.2.x (Q1 2025)
+### v0.2.x (Q1 2026)
 - 🔄 Hardware security module (HSM) support
 - 🔄 Threshold signatures
 - 🔄 Batch verification optimization
 - 🔄 WASM support
 
-### v0.3.x (Q2 2025)
+### v0.3.x (Q2 2026)
 - 🔄 Zero-knowledge proof integration
 - 🔄 Multi-party computation (MPC)
 - 🔄 Post-quantum TLS integration
 
-### v1.0.x (Q3 2025)
+### v1.0.x (Q3-Q4 2026)
+- 🔄 Real ML-DSA/SLH-DSA integration
 - 🔄 PQ-only algorithms
 - 🔄 Production blockchain deployments
 - 🔄 Enterprise features
+- 🔄 Third-party security audit
 
 ## Related Projects
 

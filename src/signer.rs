@@ -7,14 +7,16 @@ use alloc::{boxed::Box, format, string::ToString, vec::Vec};
 use std::{boxed::Box, format, string::ToString, vec::Vec};
 
 use crate::{
-    AlgorithmId, DomainSeparator, HybridKeypair, HybridPrivateKey, HybridPublicKey, HybridSignature,
-    CryptoError, CryptoResult, domain, pqc,
-    traits::{KeyGenerator, Signer, Verifier, KemProvider},
-    ValidationPolicy,
+    domain, pqc,
+    traits::{KemProvider, KeyGenerator, Signer, Verifier},
+    AlgorithmId, CryptoError, CryptoResult, DomainSeparator, HybridKeypair, HybridPrivateKey,
+    HybridPublicKey, HybridSignature, ValidationPolicy,
 };
 
 #[cfg(feature = "ed25519")]
-use ed25519_dalek::{SigningKey, VerifyingKey, Signature, Signer as EdSigner, Verifier as EdVerifier};
+use ed25519_dalek::{
+    Signature, Signer as EdSigner, SigningKey, Verifier as EdVerifier, VerifyingKey,
+};
 
 /// Production-ready hybrid signer implementation
 pub struct HybridSigner;
@@ -29,9 +31,11 @@ impl HybridSigner {
     #[cfg(feature = "ed25519")]
     fn sign_ed25519(data: &[u8], private_key: &[u8]) -> Result<Vec<u8>, CryptoError> {
         if private_key.len() != 32 {
-            return Err(CryptoError::InvalidKey("Ed25519 private key must be 32 bytes".to_string()));
+            return Err(CryptoError::InvalidKey(
+                "Ed25519 private key must be 32 bytes".to_string(),
+            ));
         }
-        
+
         let mut key_bytes = [0u8; 32];
         key_bytes.copy_from_slice(private_key);
         let signing_key = SigningKey::from_bytes(&key_bytes);
@@ -52,12 +56,20 @@ impl HybridSigner {
 
     /// Verify Ed25519 signature using real cryptographic operations
     #[cfg(feature = "ed25519")]
-    fn verify_ed25519(data: &[u8], signature: &[u8], public_key: &[u8]) -> Result<bool, CryptoError> {
+    fn verify_ed25519(
+        data: &[u8],
+        signature: &[u8],
+        public_key: &[u8],
+    ) -> Result<bool, CryptoError> {
         if public_key.len() != 32 {
-            return Err(CryptoError::InvalidKey("Ed25519 public key must be 32 bytes".to_string()));
+            return Err(CryptoError::InvalidKey(
+                "Ed25519 public key must be 32 bytes".to_string(),
+            ));
         }
         if signature.len() != 64 {
-            return Err(CryptoError::InvalidSignature("Ed25519 signature must be 64 bytes".to_string()));
+            return Err(CryptoError::InvalidSignature(
+                "Ed25519 signature must be 64 bytes".to_string(),
+            ));
         }
 
         let mut pub_key_bytes = [0u8; 32];
@@ -74,7 +86,11 @@ impl HybridSigner {
 
     /// Verify Ed25519 signature (fallback for no_std)
     #[cfg(not(feature = "ed25519"))]
-    fn verify_ed25519(data: &[u8], signature: &[u8], public_key: &[u8]) -> Result<bool, CryptoError> {
+    fn verify_ed25519(
+        data: &[u8],
+        signature: &[u8],
+        public_key: &[u8],
+    ) -> Result<bool, CryptoError> {
         use sha3::{Digest, Sha3_256};
         let mut hasher = Sha3_256::new();
         hasher.update(data);
@@ -93,7 +109,12 @@ impl HybridSigner {
 
     /// Verify PQ signature using real PQC operations
     #[cfg(any(feature = "ml-dsa", feature = "slh-dsa"))]
-    fn verify_pq(data: &[u8], signature: &[u8], public_key: &[u8], algorithm: AlgorithmId) -> CryptoResult<bool> {
+    fn verify_pq(
+        data: &[u8],
+        signature: &[u8],
+        public_key: &[u8],
+        algorithm: AlgorithmId,
+    ) -> CryptoResult<bool> {
         let pqc_ops = pqc::get_pqc_ops_for_algorithm(algorithm)?;
         pqc_ops.verify(data, signature, public_key, algorithm)
     }
@@ -110,7 +131,12 @@ impl HybridSigner {
 
     /// Verify PQ signature (fallback for no_std)
     #[cfg(not(any(feature = "ml-dsa", feature = "slh-dsa")))]
-    fn verify_pq(data: &[u8], signature: &[u8], _public_key: &[u8], algorithm: AlgorithmId) -> CryptoResult<bool> {
+    fn verify_pq(
+        data: &[u8],
+        signature: &[u8],
+        _public_key: &[u8],
+        algorithm: AlgorithmId,
+    ) -> CryptoResult<bool> {
         use sha3::{Digest, Sha3_256};
         let mut hasher = Sha3_256::new();
         hasher.update(data);
@@ -155,17 +181,19 @@ impl KeyGenerator for HybridSigner {
     /// ```
     async fn generate_keypair(algorithm: AlgorithmId) -> CryptoResult<HybridKeypair> {
         if !algorithm.is_available() {
-            return Err(crate::CryptoError::UnsupportedAlgorithm(algorithm.to_string()));
+            return Err(crate::CryptoError::UnsupportedAlgorithm(
+                algorithm.to_string(),
+            ));
         }
 
         #[cfg(feature = "ed25519")]
         {
             use rand::RngCore;
-            
+
             // Generate real Ed25519 keypair
             let mut csprng = rand::thread_rng();
             let signing_key = SigningKey::generate(&mut csprng);
-            
+
             let verifying_key = signing_key.verifying_key();
             let ed25519_public = verifying_key.to_bytes().to_vec();
             let ed25519_private = signing_key.to_bytes().to_vec();
@@ -181,8 +209,10 @@ impl KeyGenerator for HybridSigner {
             let pqc_ops = pqc::get_pqc_ops_for_algorithm(algorithm)?;
             let pq_keypair = pqc_ops.generate_keypair(algorithm)?;
 
-            let public_key = HybridPublicKey::with_pq(algorithm, ed25519_public, pq_keypair.public_key);
-            let private_key = HybridPrivateKey::new(algorithm, ed25519_private, pq_keypair.private_key);
+            let public_key =
+                HybridPublicKey::with_pq(algorithm, ed25519_public, pq_keypair.public_key);
+            let private_key =
+                HybridPrivateKey::new(algorithm, ed25519_private, pq_keypair.private_key);
 
             Ok(HybridKeypair::new(public_key, private_key))
         }
@@ -209,7 +239,8 @@ impl KeyGenerator for HybridSigner {
 
             let pq_secret: Vec<u8> = (0..pq_key_size).map(|_| rand::random()).collect();
 
-            let public_key = HybridPublicKey::new(algorithm, ed25519_key.clone(), pq_secret.clone());
+            let public_key =
+                HybridPublicKey::new(algorithm, ed25519_key.clone(), pq_secret.clone());
             let private_key = HybridPrivateKey::new(algorithm, ed25519_key, pq_secret);
 
             Ok(HybridKeypair::new(public_key, private_key))
@@ -275,17 +306,28 @@ impl Signer for HybridSigner {
         let pq_sig = if private_key.pq_key.is_some() {
             #[cfg(any(feature = "ml-dsa", feature = "slh-dsa"))]
             {
-                Some(Self::sign_pq(&domain_separated_data, private_key.pq_key.as_ref().unwrap(), private_key.algorithm)?)
+                Some(Self::sign_pq(
+                    &domain_separated_data,
+                    private_key.pq_key.as_ref().unwrap(),
+                    private_key.algorithm,
+                )?)
             }
             #[cfg(not(any(feature = "ml-dsa", feature = "slh-dsa")))]
             {
-                return Err(crate::CryptoError::UnsupportedAlgorithm(private_key.algorithm.to_string()));
+                return Err(crate::CryptoError::UnsupportedAlgorithm(
+                    private_key.algorithm.to_string(),
+                ));
             }
         } else {
             None
         };
 
-        Ok(HybridSignature::new(private_key.algorithm, ed25519_sig, pq_sig, domain))
+        Ok(HybridSignature::new(
+            private_key.algorithm,
+            ed25519_sig,
+            pq_sig,
+            domain,
+        ))
     }
 }
 
@@ -377,7 +419,9 @@ impl Verifier for HybridSigner {
             }
             #[cfg(not(any(feature = "ml-dsa", feature = "slh-dsa")))]
             {
-                return Err(crate::CryptoError::UnsupportedAlgorithm(signature.algorithm.to_string()));
+                return Err(crate::CryptoError::UnsupportedAlgorithm(
+                    signature.algorithm.to_string(),
+                ));
             }
         } else {
             true // No PQ signature to verify
@@ -388,7 +432,7 @@ impl Verifier for HybridSigner {
             ValidationPolicy::ClassicOnly => {
                 if signature.has_pq_signature() {
                     return Err(crate::CryptoError::PolicyViolation(
-                        "Classic-only policy rejects PQ signatures".to_string()
+                        "Classic-only policy rejects PQ signatures".to_string(),
                     ));
                 }
                 Ok(ed25519_valid)
@@ -403,7 +447,7 @@ impl Verifier for HybridSigner {
             ValidationPolicy::HybridRequired => {
                 if !signature.has_pq_signature() || !public_key.has_pq_key() {
                     return Err(crate::CryptoError::PolicyViolation(
-                        "Hybrid policy requires both signature types".to_string()
+                        "Hybrid policy requires both signature types".to_string(),
                     ));
                 }
                 Ok(ed25519_valid && pq_valid)
@@ -411,7 +455,7 @@ impl Verifier for HybridSigner {
             ValidationPolicy::PqOnly => {
                 if !signature.has_pq_signature() || !public_key.has_pq_key() {
                     return Err(crate::CryptoError::PolicyViolation(
-                        "PQ-only policy requires PQ signatures".to_string()
+                        "PQ-only policy requires PQ signatures".to_string(),
                     ));
                 }
                 Ok(pq_valid)
@@ -425,7 +469,7 @@ impl KemProvider for HybridSigner {
     async fn encapsulate(public_key: &HybridPublicKey) -> CryptoResult<(Vec<u8>, Vec<u8>)> {
         if !public_key.has_pq_key() {
             return Err(crate::CryptoError::UnsupportedAlgorithm(
-                "KEM requires PQ key".to_string()
+                "KEM requires PQ key".to_string(),
             ));
         }
 
@@ -436,10 +480,13 @@ impl KemProvider for HybridSigner {
         Ok((shared_secret, ciphertext))
     }
 
-    async fn decapsulate(ciphertext: &[u8], private_key: &HybridPrivateKey) -> CryptoResult<Vec<u8>> {
+    async fn decapsulate(
+        ciphertext: &[u8],
+        private_key: &HybridPrivateKey,
+    ) -> CryptoResult<Vec<u8>> {
         if !private_key.has_pq_key() {
             return Err(crate::CryptoError::UnsupportedAlgorithm(
-                "KEM requires PQ key".to_string()
+                "KEM requires PQ key".to_string(),
             ));
         }
 
@@ -463,7 +510,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_ed25519_keypair_generation() {
-        let keypair = HybridSigner::generate_keypair(AlgorithmId::Ed25519).await.unwrap();
+        let keypair = HybridSigner::generate_keypair(AlgorithmId::Ed25519)
+            .await
+            .unwrap();
 
         assert_eq!(keypair.private_key.algorithm, AlgorithmId::Ed25519);
         assert_eq!(keypair.public_key.algorithm, AlgorithmId::Ed25519);
@@ -476,7 +525,9 @@ mod tests {
     #[cfg(feature = "ml-dsa")]
     #[tokio::test]
     async fn test_hybrid_keypair_generation() {
-        let keypair = HybridSigner::generate_keypair(AlgorithmId::MlDsa65).await.unwrap();
+        let keypair = HybridSigner::generate_keypair(AlgorithmId::MlDsa65)
+            .await
+            .unwrap();
 
         assert_eq!(keypair.private_key.algorithm, AlgorithmId::MlDsa65);
         assert_eq!(keypair.public_key.algorithm, AlgorithmId::MlDsa65);
@@ -488,14 +539,18 @@ mod tests {
 
     #[tokio::test]
     async fn test_ed25519_signing_verification() {
-        let keypair = HybridSigner::generate_keypair(AlgorithmId::Ed25519).await.unwrap();
+        let keypair = HybridSigner::generate_keypair(AlgorithmId::Ed25519)
+            .await
+            .unwrap();
         let data = b"Hello, Ed25519!";
 
         let signature = HybridSigner::sign_with_domain(
             data,
             &keypair.private_key,
             DomainSeparator::Transaction,
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
 
         assert_eq!(signature.algorithm, AlgorithmId::Ed25519);
         assert!(!signature.has_pq_signature());
@@ -505,7 +560,9 @@ mod tests {
             &signature,
             &keypair.public_key,
             ValidationPolicy::ClassicOnly,
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
 
         assert!(is_valid);
     }
@@ -513,14 +570,15 @@ mod tests {
     #[cfg(feature = "ml-dsa")]
     #[tokio::test]
     async fn test_hybrid_signing_verification() {
-        let keypair = HybridSigner::generate_keypair(AlgorithmId::MlDsa65).await.unwrap();
+        let keypair = HybridSigner::generate_keypair(AlgorithmId::MlDsa65)
+            .await
+            .unwrap();
         let data = b"Hello, Hybrid Crypto!";
 
-        let signature = HybridSigner::sign_with_domain(
-            data,
-            &keypair.private_key,
-            DomainSeparator::Block,
-        ).await.unwrap();
+        let signature =
+            HybridSigner::sign_with_domain(data, &keypair.private_key, DomainSeparator::Block)
+                .await
+                .unwrap();
 
         assert_eq!(signature.algorithm, AlgorithmId::MlDsa65);
         assert!(signature.has_pq_signature());
@@ -531,42 +589,55 @@ mod tests {
             &signature,
             &keypair.public_key,
             ValidationPolicy::HybridRequired,
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
 
         assert!(is_valid);
     }
 
     #[tokio::test]
     async fn test_domain_separation() {
-        let keypair = HybridSigner::generate_keypair(AlgorithmId::Ed25519).await.unwrap();
+        let keypair = HybridSigner::generate_keypair(AlgorithmId::Ed25519)
+            .await
+            .unwrap();
         let data = b"Same data";
 
         let tx_sig = HybridSigner::sign_with_domain(
             data,
             &keypair.private_key,
             DomainSeparator::Transaction,
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
 
-        let block_sig = HybridSigner::sign_with_domain(
-            data,
-            &keypair.private_key,
-            DomainSeparator::Block,
-        ).await.unwrap();
+        let block_sig =
+            HybridSigner::sign_with_domain(data, &keypair.private_key, DomainSeparator::Block)
+                .await
+                .unwrap();
 
         // Signatures should be different due to domain separation
         assert_ne!(tx_sig.ed25519_sig, block_sig.ed25519_sig);
 
         // But both should verify correctly with their respective domains
-        assert!(HybridSigner::verify(data, &tx_sig, &keypair.public_key).await.unwrap());
-        assert!(HybridSigner::verify(data, &block_sig, &keypair.public_key).await.unwrap());
+        assert!(HybridSigner::verify(data, &tx_sig, &keypair.public_key)
+            .await
+            .unwrap());
+        assert!(HybridSigner::verify(data, &block_sig, &keypair.public_key)
+            .await
+            .unwrap());
     }
 
     #[tokio::test]
     async fn test_policy_enforcement() {
-        let classic_keypair = HybridSigner::generate_keypair(AlgorithmId::Ed25519).await.unwrap();
+        let classic_keypair = HybridSigner::generate_keypair(AlgorithmId::Ed25519)
+            .await
+            .unwrap();
 
         #[cfg(feature = "ml-dsa")]
-        let hybrid_keypair = HybridSigner::generate_keypair(AlgorithmId::MlDsa65).await.unwrap();
+        let hybrid_keypair = HybridSigner::generate_keypair(AlgorithmId::MlDsa65)
+            .await
+            .unwrap();
 
         let data = b"Policy test message";
 
@@ -575,17 +646,29 @@ mod tests {
             data,
             &classic_keypair.private_key,
             DomainSeparator::Transaction,
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
 
         // ClassicOnly policy should accept
         assert!(HybridSigner::verify_with_policy(
-            data, &classic_sig, &classic_keypair.public_key, ValidationPolicy::ClassicOnly
-        ).await.unwrap());
+            data,
+            &classic_sig,
+            &classic_keypair.public_key,
+            ValidationPolicy::ClassicOnly
+        )
+        .await
+        .unwrap());
 
         // HybridRequired policy should reject
         assert!(HybridSigner::verify_with_policy(
-            data, &classic_sig, &classic_keypair.public_key, ValidationPolicy::HybridRequired
-        ).await.is_err());
+            data,
+            &classic_sig,
+            &classic_keypair.public_key,
+            ValidationPolicy::HybridRequired
+        )
+        .await
+        .is_err());
 
         #[cfg(feature = "ml-dsa")]
         {
@@ -594,17 +677,29 @@ mod tests {
                 data,
                 &hybrid_keypair.private_key,
                 DomainSeparator::Transaction,
-            ).await.unwrap();
+            )
+            .await
+            .unwrap();
 
             // HybridRequired policy should accept
             assert!(HybridSigner::verify_with_policy(
-                data, &hybrid_sig, &hybrid_keypair.public_key, ValidationPolicy::HybridRequired
-            ).await.unwrap());
+                data,
+                &hybrid_sig,
+                &hybrid_keypair.public_key,
+                ValidationPolicy::HybridRequired
+            )
+            .await
+            .unwrap());
 
             // PqOnly policy should accept
             assert!(HybridSigner::verify_with_policy(
-                data, &hybrid_sig, &hybrid_keypair.public_key, ValidationPolicy::PqOnly
-            ).await.unwrap());
+                data,
+                &hybrid_sig,
+                &hybrid_keypair.public_key,
+                ValidationPolicy::PqOnly
+            )
+            .await
+            .unwrap());
         }
     }
 
@@ -612,10 +707,16 @@ mod tests {
     async fn test_kem_operations() {
         #[cfg(feature = "ml-dsa")]
         {
-            let keypair = HybridSigner::generate_keypair(AlgorithmId::MlDsa65).await.unwrap();
+            let keypair = HybridSigner::generate_keypair(AlgorithmId::MlDsa65)
+                .await
+                .unwrap();
 
-            let (shared_secret1, ciphertext) = HybridSigner::encapsulate(&keypair.public_key).await.unwrap();
-            let shared_secret2 = HybridSigner::decapsulate(&ciphertext, &keypair.private_key).await.unwrap();
+            let (shared_secret1, ciphertext) = HybridSigner::encapsulate(&keypair.public_key)
+                .await
+                .unwrap();
+            let shared_secret2 = HybridSigner::decapsulate(&ciphertext, &keypair.private_key)
+                .await
+                .unwrap();
 
             // In mock implementation, secrets will be different, but operation should succeed
             assert_eq!(shared_secret1.len(), 32);
@@ -624,4 +725,3 @@ mod tests {
         }
     }
 }
-

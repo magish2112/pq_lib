@@ -23,16 +23,18 @@ async fn run_migration_demo() -> Result<(), Box<dyn std::error::Error>> {
     let classical_signature = HybridSigner::sign_with_domain(
         tx_data,
         &classical_keypair.private_key,
-        DomainSeparator::Transaction
-    ).await?;
+        DomainSeparator::Transaction,
+    )
+    .await?;
 
     // Verify with classical-only policy
     let classical_valid = HybridSigner::verify_with_policy(
         tx_data,
         &classical_signature,
         &classical_keypair.public_key,
-        ValidationPolicy::ClassicOnly
-    ).await?;
+        ValidationPolicy::ClassicOnly,
+    )
+    .await?;
 
     println!("  ✅ Classical signature valid: {}", classical_valid);
     assert!(classical_valid);
@@ -44,18 +46,23 @@ async fn run_migration_demo() -> Result<(), Box<dyn std::error::Error>> {
     let hybrid_signature = HybridSigner::sign_with_domain(
         tx_data,
         &hybrid_keypair.private_key,
-        DomainSeparator::Transaction
-    ).await?;
+        DomainSeparator::Transaction,
+    )
+    .await?;
 
     // Verify with hybrid-preferred policy (accepts both)
     let hybrid_preferred_valid = HybridSigner::verify_with_policy(
         tx_data,
         &hybrid_signature,
         &hybrid_keypair.public_key,
-        ValidationPolicy::HybridPreferred
-    ).await?;
+        ValidationPolicy::HybridPreferred,
+    )
+    .await?;
 
-    println!("  ✅ Hybrid signature (preferred) valid: {}", hybrid_preferred_valid);
+    println!(
+        "  ✅ Hybrid signature (preferred) valid: {}",
+        hybrid_preferred_valid
+    );
     assert!(hybrid_preferred_valid);
 
     // Still accept classical signatures
@@ -63,10 +70,14 @@ async fn run_migration_demo() -> Result<(), Box<dyn std::error::Error>> {
         tx_data,
         &classical_signature,
         &classical_keypair.public_key,
-        ValidationPolicy::HybridPreferred
-    ).await?;
+        ValidationPolicy::HybridPreferred,
+    )
+    .await?;
 
-    println!("  ✅ Classical signature (backward compatible) valid: {}", classical_still_valid);
+    println!(
+        "  ✅ Classical signature (backward compatible) valid: {}",
+        classical_still_valid
+    );
     assert!(classical_still_valid);
 
     // Step 3: Require hybrid signatures
@@ -77,10 +88,14 @@ async fn run_migration_demo() -> Result<(), Box<dyn std::error::Error>> {
         tx_data,
         &classical_signature,
         &classical_keypair.public_key,
-        ValidationPolicy::HybridRequired
-    ).await?;
+        ValidationPolicy::HybridRequired,
+    )
+    .await?;
 
-    println!("  ❌ Classical signature (hybrid required) valid: {}", classical_fails_hybrid_required);
+    println!(
+        "  ❌ Classical signature (hybrid required) valid: {}",
+        classical_fails_hybrid_required
+    );
     assert!(!classical_fails_hybrid_required);
 
     // Hybrid signature should pass hybrid-required policy
@@ -88,10 +103,14 @@ async fn run_migration_demo() -> Result<(), Box<dyn std::error::Error>> {
         tx_data,
         &hybrid_signature,
         &hybrid_keypair.public_key,
-        ValidationPolicy::HybridRequired
-    ).await?;
+        ValidationPolicy::HybridRequired,
+    )
+    .await?;
 
-    println!("  ✅ Hybrid signature (required) valid: {}", hybrid_required_valid);
+    println!(
+        "  ✅ Hybrid signature (required) valid: {}",
+        hybrid_required_valid
+    );
     assert!(hybrid_required_valid);
 
     // Step 4: Policy configuration example
@@ -100,9 +119,15 @@ async fn run_migration_demo() -> Result<(), Box<dyn std::error::Error>> {
 
     let conservative_config = PolicyConfig::conservative();
     println!("  Conservative config:");
-    println!("    - Transactions: {:?}", conservative_config.transaction_policy);
+    println!(
+        "    - Transactions: {:?}",
+        conservative_config.transaction_policy
+    );
     println!("    - Blocks: {:?}", conservative_config.block_policy);
-    println!("    - Consensus: {:?}", conservative_config.consensus_policy);
+    println!(
+        "    - Consensus: {:?}",
+        conservative_config.consensus_policy
+    );
 
     let strict_config = PolicyConfig::strict();
     println!("  Strict config:");
@@ -125,7 +150,10 @@ async fn run_migration_demo() -> Result<(), Box<dyn std::error::Error>> {
 
     // Simulate deadline enforcement (would need actual time checking)
     migration_config.deadline = Some(0); // Simulate deadline passed
-    println!("  After deadline - effective policy: {:?}", migration_config.effective_policy());
+    println!(
+        "  After deadline - effective policy: {:?}",
+        migration_config.effective_policy()
+    );
 
     // Step 6: Domain-specific policies
     println!("\n📋 Domain-Specific Policies:");
@@ -134,39 +162,48 @@ async fn run_migration_demo() -> Result<(), Box<dyn std::error::Error>> {
     let keypair = HybridSigner::generate_keypair(AlgorithmId::MlDsa65).await?;
 
     // Sign same data with different domains
-    let tx_signature = HybridSigner::sign_with_domain(
-        tx_data,
-        &keypair.private_key,
-        DomainSeparator::Transaction
-    ).await?;
+    let tx_signature =
+        HybridSigner::sign_with_domain(tx_data, &keypair.private_key, DomainSeparator::Transaction)
+            .await?;
 
-    let block_signature = HybridSigner::sign_with_domain(
-        tx_data,
-        &keypair.private_key,
-        DomainSeparator::Block
-    ).await?;
+    let block_signature =
+        HybridSigner::sign_with_domain(tx_data, &keypair.private_key, DomainSeparator::Block)
+            .await?;
 
-    println!("  Transaction domain signature: {} bytes", tx_signature.ed25519_sig().len());
-    println!("  Block domain signature: {} bytes", block_signature.ed25519_sig().len());
-    println!("  Signatures are different (domain separation): {}",
-        tx_signature.ed25519_sig() != block_signature.ed25519_sig());
+    println!(
+        "  Transaction domain signature: {} bytes",
+        tx_signature.ed25519_sig().len()
+    );
+    println!(
+        "  Block domain signature: {} bytes",
+        block_signature.ed25519_sig().len()
+    );
+    println!(
+        "  Signatures are different (domain separation): {}",
+        tx_signature.ed25519_sig() != block_signature.ed25519_sig()
+    );
 
     // Verify with different policies based on domain
     let tx_valid = HybridSigner::verify_with_policy(
         tx_data,
         &tx_signature,
         &keypair.public_key,
-        conservative_config.policy_for_domain(DomainSeparator::Transaction)
-    ).await?;
+        conservative_config.policy_for_domain(DomainSeparator::Transaction),
+    )
+    .await?;
 
     let block_valid = HybridSigner::verify_with_policy(
         tx_data,
         &block_signature,
         &keypair.public_key,
-        conservative_config.policy_for_domain(DomainSeparator::Block)
-    ).await?;
+        conservative_config.policy_for_domain(DomainSeparator::Block),
+    )
+    .await?;
 
-    println!("  Transaction verification (hybrid preferred): {}", tx_valid);
+    println!(
+        "  Transaction verification (hybrid preferred): {}",
+        tx_valid
+    );
     println!("  Block verification (hybrid preferred): {}", block_valid);
 
     println!();

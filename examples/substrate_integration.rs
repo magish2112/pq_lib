@@ -44,7 +44,8 @@ impl SubstratePqcKeypair {
         data: &[u8],
         domain: DomainSeparator,
     ) -> Result<SubstratePqcSignature, Box<dyn std::error::Error>> {
-        let signature = HybridSigner::sign_with_domain(data, &self.keypair.private_key, domain).await?;
+        let signature =
+            HybridSigner::sign_with_domain(data, &self.keypair.private_key, domain).await?;
         Ok(SubstratePqcSignature(signature))
     }
 }
@@ -57,23 +58,28 @@ impl sp_core::crypto::Pair for SubstratePqcKeypair {
 
     fn generate_with_phrase(_phrase: Option<&str>) -> Self {
         // For simplicity, generate random keypair
-        Runtime::new().unwrap().block_on(async {
-            Self::generate().await.unwrap()
-        })
+        Runtime::new()
+            .unwrap()
+            .block_on(async { Self::generate().await.unwrap() })
     }
 
     fn from_seed(seed: &Self::Seed) -> Self {
         // In real implementation, derive key from seed
-        Runtime::new().unwrap().block_on(async {
-            Self::generate().await.unwrap()
-        })
+        Runtime::new()
+            .unwrap()
+            .block_on(async { Self::generate().await.unwrap() })
     }
 
     fn from_seed_slice(seed: &[u8]) -> Result<Self, sp_core::crypto::SecretStringError> {
-        Ok(Self::from_seed(&seed.try_into().map_err(|_| sp_core::crypto::SecretStringError::InvalidSeedLength)?))
+        Ok(Self::from_seed(&seed.try_into().map_err(|_| {
+            sp_core::crypto::SecretStringError::InvalidSeedLength
+        })?))
     }
 
-    fn derive<Iter: Iterator<Item = sp_core::crypto::DeriveJunction>>(&self, _path: Iter) -> Result<Self, sp_core::crypto::DeriveError> {
+    fn derive<Iter: Iterator<Item = sp_core::crypto::DeriveJunction>>(
+        &self,
+        _path: Iter,
+    ) -> Result<Self, sp_core::crypto::DeriveError> {
         Ok(self.clone())
     }
 
@@ -83,7 +89,9 @@ impl sp_core::crypto::Pair for SubstratePqcKeypair {
 
     fn sign(&self, msg: &[u8]) -> Self::Signature {
         Runtime::new().unwrap().block_on(async {
-            self.sign_with_domain(msg, DomainSeparator::Transaction).await.unwrap()
+            self.sign_with_domain(msg, DomainSeparator::Transaction)
+                .await
+                .unwrap()
         })
     }
 
@@ -94,7 +102,9 @@ impl sp_core::crypto::Pair for SubstratePqcKeypair {
                 &sig.0,
                 &pubkey.0,
                 ValidationPolicy::HybridPreferred,
-            ).await.unwrap_or(false)
+            )
+            .await
+            .unwrap_or(false)
         })
     }
 
@@ -168,7 +178,8 @@ mod pallet_example {
                     &signature.0,
                     &SubstratePqcPublicKey::from(who.clone()).0,
                     ValidationPolicy::HybridRequired,
-                ).await
+                )
+                .await
             })?;
 
             ensure!(is_valid, Error::<T>::InvalidSignature);

@@ -4,7 +4,10 @@ use core::fmt;
 
 /// Validation policy for signature verification
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[cfg_attr(feature = "serde-support", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde-support",
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub enum ValidationPolicy {
     /// Accept only classical signatures (Ed25519)
     ClassicOnly,
@@ -19,14 +22,19 @@ pub enum ValidationPolicy {
 impl ValidationPolicy {
     /// Check if policy allows classical-only signatures
     pub const fn allows_classic_only(self) -> bool {
-        matches!(self, ValidationPolicy::ClassicOnly | ValidationPolicy::HybridPreferred)
+        matches!(
+            self,
+            ValidationPolicy::ClassicOnly | ValidationPolicy::HybridPreferred
+        )
     }
 
     /// Check if policy allows post-quantum signatures
     pub const fn allows_pq(self) -> bool {
         matches!(
             self,
-            ValidationPolicy::HybridPreferred | ValidationPolicy::HybridRequired | ValidationPolicy::PqOnly
+            ValidationPolicy::HybridPreferred
+                | ValidationPolicy::HybridRequired
+                | ValidationPolicy::PqOnly
         )
     }
 
@@ -70,7 +78,10 @@ impl Default for ValidationPolicy {
 
 /// Migration path configuration
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde-support", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde-support",
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub struct MigrationConfig {
     /// Current validation policy
     pub current_policy: ValidationPolicy,
@@ -170,7 +181,10 @@ impl Default for MigrationConfig {
 
 /// Policy configuration for different contexts
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde-support", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde-support",
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub struct PolicyConfig {
     /// Policy for transaction signatures
     pub transaction_policy: ValidationPolicy,
@@ -284,8 +298,7 @@ mod tests {
 
         // Simulate deadline passed
         config.deadline = Some(0); // Unix epoch
-        // Note: should_enforce_target() would return true in std environment with current time > 0
-        // But we can't test time-dependent logic easily in no_std
+                                   // Note: should_enforce_target() would return true in std environment with current time > 0
+                                   // But we can't test time-dependent logic easily in no_std
     }
 }
-

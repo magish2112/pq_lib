@@ -1,7 +1,7 @@
 //! Hybrid cryptographic signature types
 
+use crate::{error::CryptoError, AlgorithmId, DomainSeparator};
 use core::fmt;
-use crate::{AlgorithmId, DomainSeparator, error::CryptoError};
 
 /// Result type for cryptographic operations
 pub type CryptoResult<T> = Result<T, CryptoError>;
@@ -39,7 +39,10 @@ pub type CryptoResult<T> = Result<T, CryptoError>;
 /// assert!(signature.is_valid_for_algorithm());
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "serde-support", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde-support",
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub struct HybridSignature {
     /// Format version for backward compatibility and future extensibility
     pub version: u8,
@@ -96,22 +99,24 @@ impl HybridSignature {
     pub fn validate_format(&self) -> CryptoResult<()> {
         // Check version
         if self.version != Self::CURRENT_VERSION {
-            return Err(CryptoError::InvalidSignature(
-                format!("Unsupported signature version: {}", self.version)
-            ));
+            return Err(CryptoError::InvalidSignature(format!(
+                "Unsupported signature version: {}",
+                self.version
+            )));
         }
 
         // Check Ed25519 signature size
         if self.ed25519_sig.len() != 64 {
-            return Err(CryptoError::InvalidSignature(
-                format!("Invalid Ed25519 signature size: {}", self.ed25519_sig.len())
-            ));
+            return Err(CryptoError::InvalidSignature(format!(
+                "Invalid Ed25519 signature size: {}",
+                self.ed25519_sig.len()
+            )));
         }
 
         // Check algorithm consistency
         if !self.is_valid_for_algorithm() {
             return Err(CryptoError::InvalidSignature(
-                "Signature format inconsistent with algorithm".to_string()
+                "Signature format inconsistent with algorithm".to_string(),
             ));
         }
 
@@ -160,7 +165,8 @@ mod tests {
     fn test_hybrid_signature_creation() {
         use crate::DomainSeparator;
         let ed25519_sig = vec![1, 2, 3, 4, 5];
-        let signature = HybridSignature::ed25519_only(ed25519_sig.clone(), DomainSeparator::Transaction);
+        let signature =
+            HybridSignature::ed25519_only(ed25519_sig.clone(), DomainSeparator::Transaction);
 
         assert_eq!(signature.version, HybridSignature::CURRENT_VERSION);
         assert_eq!(signature.algorithm, AlgorithmId::Ed25519);
@@ -178,7 +184,7 @@ mod tests {
             AlgorithmId::MlDsa65,
             ed25519_sig.clone(),
             Some(pq_sig.clone()),
-            DomainSeparator::Transaction
+            DomainSeparator::Transaction,
         );
 
         assert_eq!(signature.version, HybridSignature::CURRENT_VERSION);
@@ -198,7 +204,7 @@ mod tests {
             AlgorithmId::MlDsa65,
             vec![0u8; 64],
             Some(vec![0u8; 3302]),
-            DomainSeparator::Block
+            DomainSeparator::Block,
         );
         assert_eq!(signature.expected_size(), 64 + 3302);
     }

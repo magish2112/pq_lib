@@ -10,7 +10,10 @@ use core::fmt;
 
 /// Domain separators for cryptographic operations to prevent cross-protocol attacks
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde-support", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde-support",
+    derive(serde::Serialize, serde::Deserialize)
+)]
 #[repr(u8)]
 pub enum DomainSeparator {
     /// Transaction signing
@@ -111,7 +114,10 @@ mod tests {
 
     #[test]
     fn test_domain_separators() {
-        assert_eq!(DomainSeparator::Transaction.as_bytes(), b"Symbios-PQC-TX-v1");
+        assert_eq!(
+            DomainSeparator::Transaction.as_bytes(),
+            b"Symbios-PQC-TX-v1"
+        );
         assert_eq!(DomainSeparator::Block.as_bytes(), b"Symbios-PQC-BLOCK-v1");
         assert!(DomainSeparator::Transaction.is_blockchain_domain());
         assert!(DomainSeparator::Custom(0xFF).is_blockchain_domain()); // Custom is not blockchain-specific
@@ -135,4 +141,3 @@ mod tests {
         assert!(domain_msg.ends_with(message));
     }
 }
-

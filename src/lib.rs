@@ -59,13 +59,23 @@
 extern crate alloc;
 
 #[cfg(not(feature = "std"))]
-use alloc::{boxed::Box, format, string::{String, ToString}, vec::Vec};
+use alloc::{
+    boxed::Box,
+    format,
+    string::{String, ToString},
+    vec::Vec,
+};
 
 #[cfg(feature = "std")]
 extern crate std;
 
 #[cfg(feature = "std")]
-use std::{boxed::Box, format, string::{String, ToString}, vec::Vec};
+use std::{
+    boxed::Box,
+    format,
+    string::{String, ToString},
+    vec::Vec,
+};
 
 /// Algorithm identifiers and properties
 pub mod algorithm;
@@ -94,10 +104,12 @@ pub use algorithm::AlgorithmId;
 pub use domain::DomainSeparator;
 pub use error::CryptoError;
 pub use keypair::{HybridKeypair, HybridPrivateKey, HybridPublicKey};
-pub use policy::{ValidationPolicy, PolicyConfig, MigrationConfig};
+pub use policy::{MigrationConfig, PolicyConfig, ValidationPolicy};
 pub use signature::HybridSignature;
 pub use signer::HybridSigner;
-pub use traits::{KeyGenerator, Signer, Verifier, KemProvider, BatchSigner, BatchVerifier, KeyDerivation};
+pub use traits::{
+    BatchSigner, BatchVerifier, KemProvider, KeyDerivation, KeyGenerator, Signer, Verifier,
+};
 
 /// Result type for cryptographic operations
 pub type CryptoResult<T> = Result<T, CryptoError>;

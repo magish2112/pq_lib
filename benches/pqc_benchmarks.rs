@@ -12,7 +12,11 @@ fn bench_keypair_generation(c: &mut Criterion) {
     group.bench_function("ed25519", |b| {
         b.iter(|| {
             rt.block_on(async {
-                black_box(HybridSigner::generate_keypair(AlgorithmId::Ed25519).await.unwrap())
+                black_box(
+                    HybridSigner::generate_keypair(AlgorithmId::Ed25519)
+                        .await
+                        .unwrap(),
+                )
             })
         })
     });
@@ -21,7 +25,11 @@ fn bench_keypair_generation(c: &mut Criterion) {
         group.bench_function("ml_dsa_65_hybrid", |b| {
             b.iter(|| {
                 rt.block_on(async {
-                    black_box(HybridSigner::generate_keypair(AlgorithmId::MlDsa65).await.unwrap())
+                    black_box(
+                        HybridSigner::generate_keypair(AlgorithmId::MlDsa65)
+                            .await
+                            .unwrap(),
+                    )
                 })
             })
         });
@@ -31,7 +39,11 @@ fn bench_keypair_generation(c: &mut Criterion) {
         group.bench_function("slh_dsa_hybrid", |b| {
             b.iter(|| {
                 rt.block_on(async {
-                    black_box(HybridSigner::generate_keypair(AlgorithmId::SlhDsaShake256f).await.unwrap())
+                    black_box(
+                        HybridSigner::generate_keypair(AlgorithmId::SlhDsaShake256f)
+                            .await
+                            .unwrap(),
+                    )
                 })
             })
         });
@@ -44,9 +56,14 @@ fn bench_signing(c: &mut Criterion) {
     let rt = Runtime::new().unwrap();
 
     // Prepare keypairs
-    let ed25519_keypair = rt.block_on(HybridSigner::generate_keypair(AlgorithmId::Ed25519)).unwrap();
+    let ed25519_keypair = rt
+        .block_on(HybridSigner::generate_keypair(AlgorithmId::Ed25519))
+        .unwrap();
     let ml_dsa_keypair = if AlgorithmId::MlDsa65.is_available() {
-        Some(rt.block_on(HybridSigner::generate_keypair(AlgorithmId::MlDsa65)).unwrap())
+        Some(
+            rt.block_on(HybridSigner::generate_keypair(AlgorithmId::MlDsa65))
+                .unwrap(),
+        )
     } else {
         None
     };
@@ -58,11 +75,15 @@ fn bench_signing(c: &mut Criterion) {
     group.bench_function("ed25519_transaction", |b| {
         b.iter(|| {
             rt.block_on(async {
-                black_box(HybridSigner::sign_with_domain(
-                    test_data,
-                    &ed25519_keypair.private_key,
-                    DomainSeparator::Transaction,
-                ).await.unwrap())
+                black_box(
+                    HybridSigner::sign_with_domain(
+                        test_data,
+                        &ed25519_keypair.private_key,
+                        DomainSeparator::Transaction,
+                    )
+                    .await
+                    .unwrap(),
+                )
             })
         })
     });
@@ -71,11 +92,15 @@ fn bench_signing(c: &mut Criterion) {
         group.bench_function("ml_dsa_65_transaction", |b| {
             b.iter(|| {
                 rt.block_on(async {
-                    black_box(HybridSigner::sign_with_domain(
-                        test_data,
-                        &keypair.private_key,
-                        DomainSeparator::Transaction,
-                    ).await.unwrap())
+                    black_box(
+                        HybridSigner::sign_with_domain(
+                            test_data,
+                            &keypair.private_key,
+                            DomainSeparator::Transaction,
+                        )
+                        .await
+                        .unwrap(),
+                    )
                 })
             })
         });
@@ -88,20 +113,34 @@ fn bench_verification(c: &mut Criterion) {
     let rt = Runtime::new().unwrap();
 
     // Prepare signatures
-    let ed25519_keypair = rt.block_on(HybridSigner::generate_keypair(AlgorithmId::Ed25519)).unwrap();
-    let ed25519_sig = rt.block_on(HybridSigner::sign_with_domain(
-        b"test data", &ed25519_keypair.private_key, DomainSeparator::Transaction
-    )).unwrap();
+    let ed25519_keypair = rt
+        .block_on(HybridSigner::generate_keypair(AlgorithmId::Ed25519))
+        .unwrap();
+    let ed25519_sig = rt
+        .block_on(HybridSigner::sign_with_domain(
+            b"test data",
+            &ed25519_keypair.private_key,
+            DomainSeparator::Transaction,
+        ))
+        .unwrap();
 
     let ml_dsa_keypair = if AlgorithmId::MlDsa65.is_available() {
-        Some(rt.block_on(HybridSigner::generate_keypair(AlgorithmId::MlDsa65)).unwrap())
+        Some(
+            rt.block_on(HybridSigner::generate_keypair(AlgorithmId::MlDsa65))
+                .unwrap(),
+        )
     } else {
         None
     };
     let ml_dsa_sig = if let Some(ref keypair) = ml_dsa_keypair {
-        Some(rt.block_on(HybridSigner::sign_with_domain(
-            b"test data", &keypair.private_key, DomainSeparator::Transaction
-        )).unwrap())
+        Some(
+            rt.block_on(HybridSigner::sign_with_domain(
+                b"test data",
+                &keypair.private_key,
+                DomainSeparator::Transaction,
+            ))
+            .unwrap(),
+        )
     } else {
         None
     };
@@ -113,10 +152,16 @@ fn bench_verification(c: &mut Criterion) {
     group.bench_function("ed25519_classic_only", |b| {
         b.iter(|| {
             rt.block_on(async {
-                black_box(HybridSigner::verify_with_policy(
-                    test_data, &ed25519_sig, &ed25519_keypair.public_key,
-                    ValidationPolicy::ClassicOnly,
-                ).await.unwrap())
+                black_box(
+                    HybridSigner::verify_with_policy(
+                        test_data,
+                        &ed25519_sig,
+                        &ed25519_keypair.public_key,
+                        ValidationPolicy::ClassicOnly,
+                    )
+                    .await
+                    .unwrap(),
+                )
             })
         })
     });
@@ -124,10 +169,16 @@ fn bench_verification(c: &mut Criterion) {
     group.bench_function("ed25519_hybrid_preferred", |b| {
         b.iter(|| {
             rt.block_on(async {
-                black_box(HybridSigner::verify_with_policy(
-                    test_data, &ed25519_sig, &ed25519_keypair.public_key,
-                    ValidationPolicy::HybridPreferred,
-                ).await.unwrap())
+                black_box(
+                    HybridSigner::verify_with_policy(
+                        test_data,
+                        &ed25519_sig,
+                        &ed25519_keypair.public_key,
+                        ValidationPolicy::HybridPreferred,
+                    )
+                    .await
+                    .unwrap(),
+                )
             })
         })
     });
@@ -136,10 +187,16 @@ fn bench_verification(c: &mut Criterion) {
         group.bench_function("ml_dsa_hybrid_required", |b| {
             b.iter(|| {
                 rt.block_on(async {
-                    black_box(HybridSigner::verify_with_policy(
-                        test_data, sig, &keypair.public_key,
-                        ValidationPolicy::HybridRequired,
-                    ).await.unwrap())
+                    black_box(
+                        HybridSigner::verify_with_policy(
+                            test_data,
+                            sig,
+                            &keypair.public_key,
+                            ValidationPolicy::HybridRequired,
+                        )
+                        .await
+                        .unwrap(),
+                    )
                 })
             })
         });
@@ -147,10 +204,16 @@ fn bench_verification(c: &mut Criterion) {
         group.bench_function("ml_dsa_pq_only", |b| {
             b.iter(|| {
                 rt.block_on(async {
-                    black_box(HybridSigner::verify_with_policy(
-                        test_data, sig, &keypair.public_key,
-                        ValidationPolicy::PqOnly,
-                    ).await.unwrap())
+                    black_box(
+                        HybridSigner::verify_with_policy(
+                            test_data,
+                            sig,
+                            &keypair.public_key,
+                            ValidationPolicy::PqOnly,
+                        )
+                        .await
+                        .unwrap(),
+                    )
                 })
             })
         });
@@ -162,25 +225,26 @@ fn bench_verification(c: &mut Criterion) {
 fn bench_serialization(c: &mut Criterion) {
     let rt = Runtime::new().unwrap();
 
-    let keypair = rt.block_on(HybridSigner::generate_keypair(AlgorithmId::Ed25519)).unwrap();
-    let signature = rt.block_on(HybridSigner::sign(
-        b"serialization test", &keypair.private_key
-    )).unwrap();
+    let keypair = rt
+        .block_on(HybridSigner::generate_keypair(AlgorithmId::Ed25519))
+        .unwrap();
+    let signature = rt
+        .block_on(HybridSigner::sign(
+            b"serialization test",
+            &keypair.private_key,
+        ))
+        .unwrap();
 
     let mut group = c.benchmark_group("serialization");
 
     group.bench_function("serialize_signature", |b| {
-        b.iter(|| {
-            black_box(pq_lib::serialization::serialize_signature(&signature).unwrap())
-        })
+        b.iter(|| black_box(pq_lib::serialization::serialize_signature(&signature).unwrap()))
     });
 
     let serialized = pq_lib::serialization::serialize_signature(&signature).unwrap();
 
     group.bench_function("deserialize_signature", |b| {
-        b.iter(|| {
-            black_box(pq_lib::serialization::deserialize_signature(&serialized).unwrap())
-        })
+        b.iter(|| black_box(pq_lib::serialization::deserialize_signature(&serialized).unwrap()))
     });
 
     group.bench_function("serialize_public_key", |b| {
@@ -203,7 +267,9 @@ fn bench_serialization(c: &mut Criterion) {
 fn bench_domain_separation(c: &mut Criterion) {
     let rt = Runtime::new().unwrap();
 
-    let keypair = rt.block_on(HybridSigner::generate_keypair(AlgorithmId::Ed25519)).unwrap();
+    let keypair = rt
+        .block_on(HybridSigner::generate_keypair(AlgorithmId::Ed25519))
+        .unwrap();
     let test_data = b"Same message, different domains";
 
     let mut group = c.benchmark_group("domain_separation");
@@ -211,9 +277,15 @@ fn bench_domain_separation(c: &mut Criterion) {
     group.bench_function("transaction_domain", |b| {
         b.iter(|| {
             rt.block_on(async {
-                black_box(HybridSigner::sign_with_domain(
-                    test_data, &keypair.private_key, DomainSeparator::Transaction,
-                ).await.unwrap())
+                black_box(
+                    HybridSigner::sign_with_domain(
+                        test_data,
+                        &keypair.private_key,
+                        DomainSeparator::Transaction,
+                    )
+                    .await
+                    .unwrap(),
+                )
             })
         })
     });
@@ -221,9 +293,15 @@ fn bench_domain_separation(c: &mut Criterion) {
     group.bench_function("block_domain", |b| {
         b.iter(|| {
             rt.block_on(async {
-                black_box(HybridSigner::sign_with_domain(
-                    test_data, &keypair.private_key, DomainSeparator::Block,
-                ).await.unwrap())
+                black_box(
+                    HybridSigner::sign_with_domain(
+                        test_data,
+                        &keypair.private_key,
+                        DomainSeparator::Block,
+                    )
+                    .await
+                    .unwrap(),
+                )
             })
         })
     });
@@ -231,9 +309,15 @@ fn bench_domain_separation(c: &mut Criterion) {
     group.bench_function("consensus_domain", |b| {
         b.iter(|| {
             rt.block_on(async {
-                black_box(HybridSigner::sign_with_domain(
-                    test_data, &keypair.private_key, DomainSeparator::Consensus,
-                ).await.unwrap())
+                black_box(
+                    HybridSigner::sign_with_domain(
+                        test_data,
+                        &keypair.private_key,
+                        DomainSeparator::Consensus,
+                    )
+                    .await
+                    .unwrap(),
+                )
             })
         })
     });
@@ -250,17 +334,27 @@ fn bench_kem_operations(c: &mut Criterion) {
         group.bench_function("encapsulate", |b| {
             b.iter(|| {
                 rt.block_on(async {
-                    black_box(HybridSigner::encapsulate(&keypair.public_key).await.unwrap())
+                    black_box(
+                        HybridSigner::encapsulate(&keypair.public_key)
+                            .await
+                            .unwrap(),
+                    )
                 })
             })
         });
 
-        let (shared_secret1, ciphertext) = rt.block_on(HybridSigner::encapsulate(&keypair.public_key)).unwrap();
+        let (shared_secret1, ciphertext) = rt
+            .block_on(HybridSigner::encapsulate(&keypair.public_key))
+            .unwrap();
 
         group.bench_function("decapsulate", |b| {
             b.iter(|| {
                 rt.block_on(async {
-                    black_box(HybridSigner::decapsulate(&ciphertext, &keypair.private_key).await.unwrap())
+                    black_box(
+                        HybridSigner::decapsulate(&ciphertext, &keypair.private_key)
+                            .await
+                            .unwrap(),
+                    )
                 })
             })
         });
@@ -279,4 +373,3 @@ criterion_group!(
     bench_kem_operations,
 );
 criterion_main!(benches);
-

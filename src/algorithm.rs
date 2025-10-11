@@ -32,7 +32,10 @@ use core::fmt;
 /// assert_eq!(AlgorithmId::MlDsa65.public_key_size(), 32 + 1952);
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde-support", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde-support",
+    derive(serde::Serialize, serde::Deserialize)
+)]
 #[repr(u8)]
 pub enum AlgorithmId {
     /// Ed25519 only (backward compatibility)
@@ -96,9 +99,9 @@ impl AlgorithmId {
     /// Get security level estimate (NIST categories)
     pub const fn security_level(self) -> u8 {
         match self {
-            AlgorithmId::Ed25519 => 2, // ~128-bit security
-            AlgorithmId::MlDsa65 => 3, // Category 3 (192-bit)
-            AlgorithmId::MlDsa87 => 5, // Category 5 (256-bit)
+            AlgorithmId::Ed25519 => 2,         // ~128-bit security
+            AlgorithmId::MlDsa65 => 3,         // Category 3 (192-bit)
+            AlgorithmId::MlDsa87 => 5,         // Category 5 (256-bit)
             AlgorithmId::SlhDsaShake256f => 5, // Category 5 (256-bit)
         }
     }
