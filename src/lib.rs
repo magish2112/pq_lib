@@ -79,12 +79,19 @@ use std::{
 
 /// Algorithm identifiers and properties
 pub mod algorithm;
+/// Fluent builder APIs for elegant configuration
+pub mod builders;
+/// Backward compatibility layer for smooth migration
+pub mod compat;
 /// Domain separators for cryptographic operations
 pub mod domain;
 /// Cryptographic error types
 pub mod error;
 /// Hybrid cryptographic keypair types
 pub mod keypair;
+/// Declarative macros for elegant code generation
+#[macro_use]
+pub mod macros;
 /// Validation policies for signature verification
 pub mod policy;
 /// Post-quantum cryptography operations
@@ -98,6 +105,10 @@ pub mod signature;
 pub mod signer;
 /// Cryptographic trait definitions
 pub mod traits;
+/// Type-level cryptography primitives for zero-cost abstractions
+pub mod typed;
+/// Type-state pattern for safe migration management
+pub mod typestate;
 
 // Re-export main types
 pub use algorithm::AlgorithmId;
